@@ -22,32 +22,33 @@ class TradeExecutionService
     ) {}
 
     /**
-     * Execute a trade between buy and sell orders.
+     * Execute a trade between buy and sell orders (with partial fill support).
      */
-    public function executeTrade(Order $buyOrder, Order $sellOrder): Trade
+    public function executeTrade(Order $buyOrder, Order $sellOrder, string $fillAmount): Trade
     {
         // Trade price is the maker's price (the order that was placed first)
-        $tradePrice = $sellOrder->price;
-        $tradeAmount = $buyOrder->amount; // Assuming full fill for MVP
+        $tradePrice = $buyOrder->created_at < $sellOrder->created_at
+            ? $buyOrder->price
+            : $sellOrder->price;
 
-        // Calculate commission
-        $commission = $this->feeCalculator->calculate($tradePrice, $tradeAmount);
+        // Calculate commission for this partial fill
+        $commission = $this->feeCalculator->calculate($tradePrice, $fillAmount);
 
         // Create trade record
         $trade = $this->tradeRepository->create([
             'buyer_order_id' => $buyOrder->id,
             'seller_order_id' => $sellOrder->id,
             'price' => $tradePrice,
-            'amount' => $tradeAmount,
+            'amount' => $fillAmount, // Partial amount
             'commission' => $commission,
         ]);
 
-        // Update balances
-        $this->updateBalances($buyOrder, $sellOrder, $tradePrice, $tradeAmount, $commission);
+        // Update balances for this partial fill
+        $this->updateBalances($buyOrder, $sellOrder, $tradePrice, $fillAmount, $commission);
 
-        // Mark orders as filled
-        $buyOrder->markAsFilled();
-        $sellOrder->markAsFilled();
+        // Update orders' filled_amount and status
+        $buyOrder->addFill($fillAmount);
+        $sellOrder->addFill($fillAmount);
 
         // Broadcast order status changes
         event(new OrderStatusChanged($buyOrder));
@@ -60,43 +61,35 @@ class TradeExecutionService
     }
 
     /**
-     * Update balances after trade execution.
+     * Update balances after trade execution (for partial fill).
      */
-    private function updateBalances(Order $buyOrder, Order $sellOrder, string $price, string $amount, string $commission): void
+    private function updateBalances(Order $buyOrder, Order $sellOrder, string $price, string $fillAmount, string $commission): void
     {
         // Extract base and quote from symbol
         [$base, $quote] = $this->parseSymbol($buyOrder->symbol);
 
-        $total = bcmul($price, $amount, 8);
+        $total = bcmul($price, $fillAmount, 8);
 
-        // Buyer: Release locked USDT, receive BTC (minus fee)
+        // Buyer: Release locked USDT for this fill, receive BTC (minus fee)
         $this->assetService->releaseLocked($buyOrder->user, $quote, $total);
-        $btcToReceive = bcsub($amount, bcdiv($commission, $price, 8), 8); // Deduct fee in BTC
+        $btcToReceive = bcsub($fillAmount, bcdiv($commission, $price, 8), 8); // Deduct fee in BTC
         $this->assetService->addAmount($buyOrder->user, $base, $btcToReceive);
 
         // Broadcast buyer balance updates
-        $buyerQuoteAsset = $buyOrder->user->getAsset($quote);
-        $buyerBaseAsset = $buyOrder->user->getAsset($base);
-        if ($buyerQuoteAsset) {
-            event(new BalanceUpdated($buyerQuoteAsset));
-        }
-        if ($buyerBaseAsset) {
-            event(new BalanceUpdated($buyerBaseAsset));
-        }
+        $buyerQuoteAsset = $this->assetService->getOrCreateAsset($buyOrder->user, $quote);
+        $buyerBaseAsset = $this->assetService->getOrCreateAsset($buyOrder->user, $base);
+        event(new BalanceUpdated($buyerQuoteAsset));
+        event(new BalanceUpdated($buyerBaseAsset));
 
-        // Seller: Release locked BTC, receive USDT (minus fee)
-        $this->assetService->releaseLocked($sellOrder->user, $base, $amount);
+        // Seller: Release locked BTC for this fill, receive USDT (minus fee)
+        $this->assetService->releaseLocked($sellOrder->user, $base, $fillAmount);
         $usdtToReceive = bcsub($total, $commission, 8); // Deduct fee in USDT
         $this->assetService->addAmount($sellOrder->user, $quote, $usdtToReceive);
 
         // Broadcast seller balance updates
-        $sellerBaseAsset = $sellOrder->user->getAsset($base);
-        $sellerQuoteAsset = $sellOrder->user->getAsset($quote);
-        if ($sellerBaseAsset) {
-            event(new BalanceUpdated($sellerBaseAsset));
-        }
-        if ($sellerQuoteAsset) {
-            event(new BalanceUpdated($sellerQuoteAsset));
-        }
+        $sellerBaseAsset = $this->assetService->getOrCreateAsset($sellOrder->user, $base);
+        $sellerQuoteAsset = $this->assetService->getOrCreateAsset($sellOrder->user, $quote);
+        event(new BalanceUpdated($sellerBaseAsset));
+        event(new BalanceUpdated($sellerQuoteAsset));
     }
 }

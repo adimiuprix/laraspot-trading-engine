@@ -58,7 +58,8 @@ class OrderRepository
 
         $query = Order::where('symbol', $symbol)
             ->where('side', $oppositeSide)
-            ->where('status', 'open');
+            ->whereIn('status', ['open', 'partially_filled'])
+            ->where('remaining_amount', '>', 0);
 
         if ($side === 'buy') {
             // Buy order can match sell orders at or below the buy price
@@ -72,6 +73,30 @@ class OrderRepository
 
         return $query->orderBy('created_at', 'asc') // Time priority
             ->get();
+    }
+
+    /**
+     * Get the best matchable order (single).
+     */
+    public function getBestMatchableOrder(string $symbol, string $side, string $price): ?Order
+    {
+        $oppositeSide = $side === 'buy' ? 'sell' : 'buy';
+
+        $query = Order::where('symbol', $symbol)
+            ->where('side', $oppositeSide)
+            ->whereIn('status', ['open', 'partially_filled'])
+            ->where('remaining_amount', '>', 0);
+
+        if ($side === 'buy') {
+            $query->where('price', '<=', $price)
+                ->orderBy('price', 'asc');
+        } else {
+            $query->where('price', '>=', $price)
+                ->orderBy('price', 'desc');
+        }
+
+        return $query->orderBy('created_at', 'asc')
+            ->first();
     }
 
     /**
@@ -89,7 +114,7 @@ class OrderRepository
     {
         return Order::where('symbol', $symbol)
             ->where('side', 'buy')
-            ->where('status', 'open')
+            ->whereIn('status', ['open', 'partially_filled'])
             ->orderBy('price', 'desc')
             ->orderBy('created_at', 'asc')
             ->limit($depth)
@@ -103,7 +128,7 @@ class OrderRepository
     {
         return Order::where('symbol', $symbol)
             ->where('side', 'sell')
-            ->where('status', 'open')
+            ->whereIn('status', ['open', 'partially_filled'])
             ->orderBy('price', 'asc')
             ->orderBy('created_at', 'asc')
             ->limit($depth)

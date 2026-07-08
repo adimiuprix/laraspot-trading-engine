@@ -7,7 +7,10 @@ interface Order {
     side: 'buy' | 'sell';
     price: string;
     amount: string;
+    filled_amount?: string;
+    remaining_amount?: string;
     total: string;
+    status?: 'open' | 'partially_filled' | 'filled' | 'cancelled';
 }
 
 defineProps<{
@@ -32,6 +35,39 @@ async function handleCancel(orderId: number) {
         setTimeout(() => {
             cancellingOrderId.value = null;
         }, 500);
+    }
+}
+
+function getFillPercentage(order: Order): number {
+    if (!order.filled_amount || !order.amount) return 0;
+    const filled = parseFloat(order.filled_amount);
+    const total = parseFloat(order.amount);
+    return total > 0 ? (filled / total) * 100 : 0;
+}
+
+function getStatusColor(status?: string): string {
+    switch (status) {
+        case 'filled':
+            return 'text-green-400';
+        case 'partially_filled':
+            return 'text-yellow-400';
+        case 'cancelled':
+            return 'text-red-400';
+        default:
+            return 'text-blue-400';
+    }
+}
+
+function getStatusLabel(status?: string): string {
+    switch (status) {
+        case 'filled':
+            return 'Filled';
+        case 'partially_filled':
+            return 'Partial';
+        case 'cancelled':
+            return 'Cancelled';
+        default:
+            return 'Open';
     }
 }
 </script>
@@ -115,6 +151,13 @@ async function handleCancel(orderId: number) {
                             <span class="text-xs text-gray-400">{{
                                 symbol
                             }}</span>
+                            <span
+                                v-if="order.status"
+                                class="text-xs font-medium"
+                                :class="getStatusColor(order.status)"
+                            >
+                                {{ getStatusLabel(order.status) }}
+                            </span>
                         </div>
                         <button
                             @click="handleCancel(order.id)"
@@ -158,6 +201,31 @@ async function handleCancel(orderId: number) {
                             </svg>
                         </button>
                     </div>
+
+                    <!-- Fill Progress Bar (if partially filled) -->
+                    <div
+                        v-if="
+                            order.status === 'partially_filled' &&
+                            order.filled_amount
+                        "
+                        class="mb-2"
+                    >
+                        <div
+                            class="mb-1 flex justify-between text-xs text-gray-400"
+                        >
+                            <span>Filled: {{ order.filled_amount }}</span>
+                            <span>{{ getFillPercentage(order).toFixed(1) }}%</span>
+                        </div>
+                        <div class="h-1.5 w-full rounded-full bg-gray-700">
+                            <div
+                                class="h-full rounded-full bg-yellow-500 transition-all"
+                                :style="{
+                                    width: getFillPercentage(order) + '%',
+                                }"
+                            ></div>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-3 gap-2 text-xs">
                         <div>
                             <div class="mb-0.5 text-gray-500">Price</div>
@@ -166,9 +234,20 @@ async function handleCancel(orderId: number) {
                             </div>
                         </div>
                         <div>
-                            <div class="mb-0.5 text-gray-500">Amount</div>
+                            <div class="mb-0.5 text-gray-500">
+                                {{
+                                    order.status === 'partially_filled'
+                                        ? 'Remaining'
+                                        : 'Amount'
+                                }}
+                            </div>
                             <div class="font-medium text-white">
-                                {{ order.amount }}
+                                {{
+                                    order.status === 'partially_filled' &&
+                                    order.remaining_amount
+                                        ? order.remaining_amount
+                                        : order.amount
+                                }}
                             </div>
                         </div>
                         <div>

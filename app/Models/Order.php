@@ -16,14 +16,16 @@ use Illuminate\Support\Carbon;
  * @property string $side (buy/sell)
  * @property string $price
  * @property string $amount
- * @property string $status (open/filled/cancelled)
+ * @property string $filled_amount
+ * @property string $remaining_amount
+ * @property string $status (open/partially_filled/filled/cancelled)
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $user
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Trade> $buyTrades
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Trade> $sellTrades
  */
-#[Fillable(['user_id', 'symbol', 'side', 'price', 'amount', 'status'])]
+#[Fillable(['user_id', 'symbol', 'side', 'price', 'amount', 'filled_amount', 'remaining_amount', 'status'])]
 class Order extends Model
 {
     /**
@@ -36,6 +38,8 @@ class Order extends Model
         return [
             'price' => 'decimal:8',
             'amount' => 'decimal:8',
+            'filled_amount' => 'decimal:8',
+            'remaining_amount' => 'decimal:8',
         ];
     }
 
@@ -142,11 +146,60 @@ class Order extends Model
     }
 
     /**
+     * Check if order is fully filled.
+     */
+    public function isFullyFilled(): bool
+    {
+        return bccomp($this->filled_amount, $this->amount, 8) === 0;
+    }
+
+    /**
+     * Check if order is partially filled.
+     */
+    public function isPartiallyFilled(): bool
+    {
+        return bccomp($this->filled_amount, '0', 8) > 0
+            && bccomp($this->filled_amount, $this->amount, 8) < 0;
+    }
+
+    /**
+     * Get fill percentage (0-100).
+     */
+    public function getFillPercentage(): string
+    {
+        if (bccomp($this->amount, '0', 8) === 0) {
+            return '0';
+        }
+
+        return bcdiv(bcmul($this->filled_amount, '100', 8), $this->amount, 2);
+    }
+
+    /**
+     * Add fill amount and update status.
+     */
+    public function addFill(string $fillAmount): void
+    {
+        $this->filled_amount = bcadd($this->filled_amount, $fillAmount, 8);
+        $this->remaining_amount = bcsub($this->amount, $this->filled_amount, 8);
+
+        if ($this->isFullyFilled()) {
+            $this->status = 'filled';
+        } elseif ($this->isPartiallyFilled()) {
+            $this->status = 'partially_filled';
+        }
+
+        $this->save();
+    }
+
+    /**
      * Mark order as filled.
      */
     public function markAsFilled(): void
     {
-        $this->update(['status' => 'filled']);
+        $this->filled_amount = $this->amount;
+        $this->remaining_amount = '0';
+        $this->status = 'filled';
+        $this->save();
     }
 
     /**
@@ -154,6 +207,7 @@ class Order extends Model
      */
     public function markAsCancelled(): void
     {
-        $this->update(['status' => 'cancelled']);
+        $this->status = 'cancelled';
+        $this->save();
     }
 }

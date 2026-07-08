@@ -57,29 +57,32 @@ defineProps<{
                                 .slice()
                                 .reverse()"
                             :key="'ask-' + index"
-                            class="hover:bg-gray-750 relative cursor-pointer"
+                            class="group relative cursor-pointer hover:bg-gray-700/30"
                         >
-                            <td class="relative z-10 px-3 py-1 text-red-400">
-                                {{ parseFloat(ask.price).toLocaleString() }}
+                            <td class="relative px-3 py-1 text-red-400">
+                                <div class="relative z-10">
+                                    {{ parseFloat(ask.price).toLocaleString() }}
+                                </div>
                             </td>
-                            <td
-                                class="relative z-10 px-3 py-1 text-right text-gray-300"
-                            >
-                                {{ ask.amount }}
+                            <td class="relative px-3 py-1 text-right text-gray-300">
+                                <div class="relative z-10">
+                                    {{ ask.amount }}
+                                </div>
                             </td>
-                            <td
-                                class="relative z-10 px-3 py-1 text-right text-gray-500"
-                            >
-                                {{ parseFloat(ask.total).toFixed(2) }}
+                            <td class="relative px-3 py-1 text-right text-gray-500">
+                                <div class="relative z-10">
+                                    {{ parseFloat(ask.total).toFixed(2) }}
+                                </div>
+                                <!-- Background bar inside last td -->
+                                <div
+                                    class="absolute inset-y-0 right-0 bg-red-900/10"
+                                    :style="{
+                                        width:
+                                            (parseFloat(ask.amount) / 2.5) * 100 +
+                                            '%',
+                                    }"
+                                ></div>
                             </td>
-                            <div
-                                class="absolute inset-0 bg-red-900/10"
-                                :style="{
-                                    width:
-                                        (parseFloat(ask.amount) / 2.5) * 100 +
-                                        '%',
-                                }"
-                            ></div>
                         </tr>
                     </tbody>
                 </table>
@@ -108,29 +111,32 @@ defineProps<{
                         <tr
                             v-for="(bid, index) in orderbook.bids"
                             :key="'bid-' + index"
-                            class="hover:bg-gray-750 relative cursor-pointer"
+                            class="group relative cursor-pointer hover:bg-gray-700/30"
                         >
-                            <td class="relative z-10 px-3 py-1 text-green-400">
-                                {{ parseFloat(bid.price).toLocaleString() }}
+                            <td class="relative px-3 py-1 text-green-400">
+                                <div class="relative z-10">
+                                    {{ parseFloat(bid.price).toLocaleString() }}
+                                </div>
                             </td>
-                            <td
-                                class="relative z-10 px-3 py-1 text-right text-gray-300"
-                            >
-                                {{ bid.amount }}
+                            <td class="relative px-3 py-1 text-right text-gray-300">
+                                <div class="relative z-10">
+                                    {{ bid.amount }}
+                                </div>
                             </td>
-                            <td
-                                class="relative z-10 px-3 py-1 text-right text-gray-500"
-                            >
-                                {{ parseFloat(bid.total).toFixed(2) }}
+                            <td class="relative px-3 py-1 text-right text-gray-500">
+                                <div class="relative z-10">
+                                    {{ parseFloat(bid.total).toFixed(2) }}
+                                </div>
+                                <!-- Background bar inside last td -->
+                                <div
+                                    class="absolute inset-y-0 right-0 bg-green-900/10"
+                                    :style="{
+                                        width:
+                                            (parseFloat(bid.amount) / 2.5) * 100 +
+                                            '%',
+                                    }"
+                                ></div>
                             </td>
-                            <div
-                                class="absolute inset-0 bg-green-900/10"
-                                :style="{
-                                    width:
-                                        (parseFloat(bid.amount) / 2.5) * 100 +
-                                        '%',
-                                }"
-                            ></div>
                         </tr>
                     </tbody>
                 </table>

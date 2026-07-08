@@ -54,6 +54,8 @@ class OrderService
                 'side' => $dto->side,
                 'price' => $dto->price,
                 'amount' => $dto->amount,
+                'filled_amount' => '0',
+                'remaining_amount' => $dto->amount,
                 'status' => 'open',
             ]);
 
@@ -93,18 +95,18 @@ class OrderService
             // Extract base and quote from symbol
             [$base, $quote] = $this->parseSymbol($order->symbol);
 
-            // Unlock the locked amount
+            // Unlock the locked amount for REMAINING order only
             if ($order->isBuyOrder()) {
-                // Unlock USDT (quote)
-                $amountToUnlock = bcmul($order->price, $order->amount, 8);
-                $this->assetService->unlockAmount($dto->user, $quote, $amountToUnlock);
+                // Unlock USDT (quote) for remaining amount
+                $remainingTotal = bcmul($order->price, $order->remaining_amount, 8);
+                $this->assetService->unlockAmount($dto->user, $quote, $remainingTotal);
 
                 // Broadcast balance update
                 $asset = $this->assetService->getOrCreateAsset($dto->user, $quote);
                 event(new BalanceUpdated($asset));
             } else {
-                // Unlock BTC (base)
-                $this->assetService->unlockAmount($dto->user, $base, $order->amount);
+                // Unlock BTC (base) for remaining amount
+                $this->assetService->unlockAmount($dto->user, $base, $order->remaining_amount);
 
                 // Broadcast balance update
                 $asset = $this->assetService->getOrCreateAsset($dto->user, $base);
