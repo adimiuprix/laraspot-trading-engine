@@ -100,14 +100,14 @@ class OrderService
                 $this->assetService->unlockAmount($dto->user, $quote, $amountToUnlock);
 
                 // Broadcast balance update
-                $asset = $dto->user->getAsset($quote);
+                $asset = $this->assetService->getOrCreateAsset($dto->user, $quote);
                 event(new BalanceUpdated($asset));
             } else {
                 // Unlock BTC (base)
                 $this->assetService->unlockAmount($dto->user, $base, $order->amount);
 
                 // Broadcast balance update
-                $asset = $dto->user->getAsset($base);
+                $asset = $this->assetService->getOrCreateAsset($dto->user, $base);
                 event(new BalanceUpdated($asset));
             }
 
