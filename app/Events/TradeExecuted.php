@@ -28,10 +28,12 @@ class TradeExecuted implements ShouldBroadcast
     public function broadcastOn(): array
     {
         $symbol = $this->trade->buyerOrder->symbol;
+        // Replace slash with dash for channel name (Pusher doesn't support slash)
+        $channelSymbol = str_replace('/', '-', $symbol);
 
         return [
-            new Channel("trades.{$symbol}"),
-            new Channel("orderbook.{$symbol}"),
+            new Channel("trades.{$channelSymbol}"),
+            new Channel("orderbook.{$channelSymbol}"),
         ];
     }
 

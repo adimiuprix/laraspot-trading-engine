@@ -27,8 +27,11 @@ class OrderPlaced implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
+        // Replace slash with dash for channel name (Pusher doesn't support slash)
+        $channelSymbol = str_replace('/', '-', $this->order->symbol);
+
         return [
-            new Channel("orderbook.{$this->order->symbol}"),
+            new Channel("orderbook.{$channelSymbol}"),
         ];
     }
 
