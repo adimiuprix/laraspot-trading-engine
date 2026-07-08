@@ -12,10 +12,10 @@ class AssetSeeder extends Seeder
      */
     public function run(): void
     {
-        // Give User 1 USDT for buying
+        // Give User 1 USDT for buying (500k USDT)
         Asset::updateOrCreate(
             ['user_id' => 1, 'symbol' => 'USDT'],
-            ['amount' => '1000.00000000', 'locked_amount' => '0.00000000']
+            ['amount' => '500000.00000000', 'locked_amount' => '0.00000000']
         );
 
         // Give User 1 some BTC too
@@ -26,14 +26,14 @@ class AssetSeeder extends Seeder
 
         // Give User 2 BTC for selling
         Asset::updateOrCreate(
-            ['user_id' => 2, 'symbol' => 'USDT'],
-            ['amount' => '2000.00000000', 'locked_amount' => '0.00000000']
+            ['user_id' => 2, 'symbol' => 'BTC'],
+            ['amount' => '50.00000000', 'locked_amount' => '0.00000000']
         );
 
         // Give User 2 some USDT too
         Asset::updateOrCreate(
-            ['user_id' => 2, 'symbol' => 'BTC'],
-            ['amount' => '50.00000000', 'locked_amount' => '0.00000000']
+            ['user_id' => 2, 'symbol' => 'USDT'],
+            ['amount' => '500000.00000000', 'locked_amount' => '0.00000000']
         );
     }
 }

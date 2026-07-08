@@ -138,10 +138,16 @@ class Order extends Model
     }
 
     /**
-     * Get the total value of the order (price * amount).
+     * Get the total value of the order (price * remaining_amount for active orders).
      */
     public function getTotalValueAttribute(): string
     {
+        // For active orders (open/partially_filled), use remaining_amount
+        if (in_array($this->status, ['open', 'partially_filled'])) {
+            return bcmul($this->price, $this->remaining_amount, 8);
+        }
+
+        // For filled/cancelled, use original amount
         return bcmul($this->price, $this->amount, 8);
     }
 
