@@ -43,7 +43,7 @@ class OrderRepository
             ->where('side', $side)
             ->where('status', 'open')
             ->orderBy('price', $side === 'buy' ? 'desc' : 'asc')
-            ->orderBy('created_at', 'asc') // Time priority
+            ->orderBy('created_at', 'asc')
             ->get();
     }
 
