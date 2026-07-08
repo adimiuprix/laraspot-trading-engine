@@ -30,6 +30,35 @@ class PlaceOrderDTO
     }
 
     /**
+     * Parse symbol into base and quote currencies.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function parseSymbol(): array
+    {
+        if (str_contains($this->symbol, '/')) {
+            return explode('/', $this->symbol);
+        }
+
+        // Legacy format BTCUSDT -> extract BTC and USDT
+        $quotePatterns = ['USDT', 'USDC', 'BUSD', 'USD', 'BTC', 'ETH', 'BNB'];
+
+        foreach ($quotePatterns as $quote) {
+            if (str_ends_with($this->symbol, $quote)) {
+                $base = substr($this->symbol, 0, -strlen($quote));
+
+                return [$base, $quote];
+            }
+        }
+
+        // Fallback: assume last 4 characters are quote
+        $quote = substr($this->symbol, -4);
+        $base = substr($this->symbol, 0, -4);
+
+        return [$base, $quote];
+    }
+
+    /**
      * Get the total value for buy orders (price * amount).
      */
     public function getTotalValue(): string
@@ -61,7 +90,7 @@ class PlaceOrderDTO
         // For BTC/USDT:
         // - Buy: lock USDT (quote currency)
         // - Sell: lock BTC (base currency)
-        [$base, $quote] = explode('/', $this->symbol);
+        [$base, $quote] = $this->parseSymbol();
 
         return $this->isBuyOrder() ? $quote : $base;
     }

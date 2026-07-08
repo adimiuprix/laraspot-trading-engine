@@ -18,8 +18,8 @@ export function useTradingForm(currentPrice: () => string) {
 
     const estimatedFee = computed(() => {
         if (!orderForm.value.total) {
-return '0.00';
-}
+            return '0.00';
+        }
 
         const total = parseFloat(orderForm.value.total);
 
@@ -28,8 +28,8 @@ return '0.00';
 
     const totalWithFee = computed(() => {
         if (!orderForm.value.total) {
-return '0.00';
-}
+            return '0.00';
+        }
 
         const total = parseFloat(orderForm.value.total);
         const fee = parseFloat(estimatedFee.value);

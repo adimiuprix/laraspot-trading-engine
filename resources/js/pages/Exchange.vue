@@ -18,7 +18,7 @@ const page = usePage();
 const user = computed(() => page.props.auth.user);
 
 // Trading pair
-const symbol = 'BTC/USDT';
+const symbol = 'BTCUSDT';
 
 // Composables for real-time data
 const {
@@ -48,7 +48,6 @@ const {
 } = useOrders(user.value.id);
 
 const {
-    assets,
     loading: assetsLoading,
     fetchAssets,
     getAvailableBalance,
@@ -150,8 +149,8 @@ async function placeOrder() {
 
 async function cancelOrder(orderId: number) {
     if (!confirm('Are you sure you want to cancel this order?')) {
-return;
-}
+        return;
+    }
 
     try {
         await removeOrder(orderId);

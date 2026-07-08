@@ -11,12 +11,15 @@ use App\Events\OrderStatusChanged;
 use App\Models\Order;
 use App\Repositories\OrderRepository;
 use App\Services\AssetService;
+use App\Services\Trading\Concerns\ParsesSymbol;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class OrderService
 {
+    use ParsesSymbol;
+
     public function __construct(
         private OrderRepository $orderRepository,
         private AssetService $assetService,
@@ -88,7 +91,7 @@ class OrderService
             }
 
             // Extract base and quote from symbol
-            [$base, $quote] = explode('/', $order->symbol);
+            [$base, $quote] = $this->parseSymbol($order->symbol);
 
             // Unlock the locked amount
             if ($order->isBuyOrder()) {

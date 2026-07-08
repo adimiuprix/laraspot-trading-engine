@@ -28,11 +28,8 @@ export function useOrderbook(symbol: string) {
             loading.value = true;
             error.value = null;
 
-            // Encode symbol untuk handle slash di URL (BTC/USDT -> BTC%2FUSDT)
-            const encodedSymbol = encodeURIComponent(symbol);
-            const response = await fetch(
-                `/api/orderbook/${encodedSymbol}?depth=20`,
-            );
+            // Symbol format: BTCUSDT (no slash needed)
+            const response = await fetch(`/api/orderbook/${symbol}?depth=20`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch orderbook');

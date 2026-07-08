@@ -9,9 +9,12 @@ use App\Models\Order;
 use App\Models\Trade;
 use App\Repositories\TradeRepository;
 use App\Services\AssetService;
+use App\Services\Trading\Concerns\ParsesSymbol;
 
 class TradeExecutionService
 {
+    use ParsesSymbol;
+
     public function __construct(
         private TradeRepository $tradeRepository,
         private AssetService $assetService,
@@ -61,8 +64,8 @@ class TradeExecutionService
      */
     private function updateBalances(Order $buyOrder, Order $sellOrder, string $price, string $amount, string $commission): void
     {
-        // Extract base and quote from symbol (e.g., BTC/USDT)
-        [$base, $quote] = explode('/', $buyOrder->symbol);
+        // Extract base and quote from symbol
+        [$base, $quote] = $this->parseSymbol($buyOrder->symbol);
 
         $total = bcmul($price, $amount, 8);
 

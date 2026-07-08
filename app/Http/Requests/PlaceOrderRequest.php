@@ -23,7 +23,7 @@ class PlaceOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'symbol' => ['required', 'string', 'regex:/^[A-Z]+\/[A-Z]+$/'],
+            'symbol' => ['required', 'string', 'regex:/^[A-Z]+\/?[A-Z]*$/'],
             'side' => ['required', 'string', 'in:buy,sell'],
             'price' => ['required', 'numeric', 'min:0.00000001'],
             'amount' => ['required', 'numeric', 'min:0.00000001'],
@@ -36,7 +36,7 @@ class PlaceOrderRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'symbol.regex' => 'Symbol must be in format BASE/QUOTE (e.g., BTC/USDT)',
+            'symbol.regex' => 'Symbol must be in format BTCUSDT or BTC/USDT',
             'side.in' => 'Side must be either buy or sell',
             'price.min' => 'Price must be greater than 0',
             'amount.min' => 'Amount must be greater than 0',

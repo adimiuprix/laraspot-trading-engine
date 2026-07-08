@@ -22,11 +22,8 @@ export function useTrades(symbol: string) {
             loading.value = true;
             error.value = null;
 
-            // Encode symbol untuk handle slash di URL
-            const encodedSymbol = encodeURIComponent(symbol);
-            const response = await fetch(
-                `/api/trades/${encodedSymbol}?limit=50`,
-            );
+            // Symbol format: BTCUSDT (no slash needed)
+            const response = await fetch(`/api/trades/${symbol}?limit=50`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch trades');
