@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { usePage } from '@inertiajs/vue3';
-import { useOrderbook } from '@/composables/useOrderbook';
-import { useTrades } from '@/composables/useTrades';
-import { useOrders } from '@/composables/useOrders';
-import { useAssets } from '@/composables/useAssets';
-import { useTradingForm } from '@/composables/useTradingForm';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import ExchangeNavigation from '@/components/Exchange/ExchangeNavigation.vue';
-import TradingChart from '@/components/Exchange/TradingChart.vue';
-import RecentTrades from '@/components/Exchange/RecentTrades.vue';
-import OrderBook from '@/components/Exchange/OrderBook.vue';
-import TradingForm from '@/components/Exchange/TradingForm.vue';
 import OpenOrders from '@/components/Exchange/OpenOrders.vue';
+import OrderBook from '@/components/Exchange/OrderBook.vue';
+import RecentTrades from '@/components/Exchange/RecentTrades.vue';
+import TradingChart from '@/components/Exchange/TradingChart.vue';
+import TradingForm from '@/components/Exchange/TradingForm.vue';
+import { useAssets } from '@/composables/useAssets';
+import { useOrderbook } from '@/composables/useOrderbook';
+import { useOrders } from '@/composables/useOrders';
+import { useTrades } from '@/composables/useTrades';
+import { useTradingForm } from '@/composables/useTradingForm';
 
 // Get user from page props
 const page = usePage();
@@ -81,6 +81,7 @@ const submitSuccess = ref(false);
 // Computed balance
 const currentBalance = computed(() => {
     const asset = activeOrderTab.value === 'buy' ? 'USDT' : 'BTC';
+
     return getAvailableBalance(asset);
 });
 
@@ -108,11 +109,13 @@ function handleSetPercentage(percent: number) {
 async function placeOrder() {
     if (orderType.value === 'limit' && !orderForm.value.price) {
         submitError.value = 'Price is required for limit orders';
+
         return;
     }
 
     if (!orderForm.value.amount) {
         submitError.value = 'Amount is required';
+
         return;
     }
 
@@ -146,7 +149,9 @@ async function placeOrder() {
 }
 
 async function cancelOrder(orderId: number) {
-    if (!confirm('Are you sure you want to cancel this order?')) return;
+    if (!confirm('Are you sure you want to cancel this order?')) {
+return;
+}
 
     try {
         await removeOrder(orderId);

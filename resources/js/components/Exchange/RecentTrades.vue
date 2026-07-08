@@ -13,6 +13,7 @@ defineProps<{
 
 function formatTime(isoString: string) {
     const date = new Date(isoString);
+
     return date.toLocaleTimeString('en-US', { hour12: false });
 }
 </script>

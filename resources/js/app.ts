@@ -1,6 +1,5 @@
 import { createInertiaApp } from '@inertiajs/vue3';
 import { configureEcho } from '@laravel/echo-vue';
-import Pusher from 'pusher-js';
 
 // Configure Laravel Echo with Reverb (Pusher-compatible)
 configureEcho({

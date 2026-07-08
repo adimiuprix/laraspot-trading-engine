@@ -17,15 +17,23 @@ export function useTradingForm(currentPrice: () => string) {
     const activeOrderTab = ref<'buy' | 'sell'>('buy');
 
     const estimatedFee = computed(() => {
-        if (!orderForm.value.total) return '0.00';
+        if (!orderForm.value.total) {
+return '0.00';
+}
+
         const total = parseFloat(orderForm.value.total);
+
         return (total * 0.001).toFixed(8); // 0.1% fee
     });
 
     const totalWithFee = computed(() => {
-        if (!orderForm.value.total) return '0.00';
+        if (!orderForm.value.total) {
+return '0.00';
+}
+
         const total = parseFloat(orderForm.value.total);
         const fee = parseFloat(estimatedFee.value);
+
         return (total + fee).toFixed(8);
     });
 
@@ -36,11 +44,13 @@ export function useTradingForm(currentPrice: () => string) {
 
     function setOrderType(type: 'limit' | 'market') {
         orderType.value = type;
+
         if (type === 'market') {
             orderForm.value.price = currentPrice();
         } else {
             orderForm.value.price = '';
         }
+
         calculateTotal();
     }
 
@@ -70,12 +80,14 @@ export function useTradingForm(currentPrice: () => string) {
             input.value = value.replace(/[^0-9.]/g, '');
 
             const parts = input.value.split('.');
+
             if (parts.length > 2) {
                 input.value = parts[0] + '.' + parts.slice(1).join('');
             }
 
             if (input === document.activeElement) {
                 const field = input.getAttribute('data-field');
+
                 if (field === 'price') {
                     orderForm.value.price = input.value;
                 } else if (field === 'amount') {

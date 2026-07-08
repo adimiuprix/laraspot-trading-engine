@@ -1,5 +1,5 @@
-import { ref } from 'vue';
-import { useEcho } from '@laravel/echo-vue';
+import { echo } from '@laravel/echo-vue';
+import { ref, onUnmounted } from 'vue';
 
 interface Asset {
     symbol: string;
@@ -10,7 +10,6 @@ interface Asset {
 }
 
 export function useAssets(userId: number) {
-    const echo = useEcho();
     const assets = ref<Record<string, Asset>>({});
     const loading = ref(false);
     const error = ref<string | null>(null);
@@ -49,6 +48,7 @@ export function useAssets(userId: number) {
             assets.value = assetsList.reduce(
                 (acc: Record<string, Asset>, asset: Asset) => {
                     acc[asset.symbol] = asset;
+
                     return acc;
                 },
                 {},
@@ -75,6 +75,7 @@ export function useAssets(userId: number) {
      */
     function getAvailableBalance(symbol: string): string {
         const asset = assets.value[symbol];
+
         return asset?.available || '0';
     }
 
@@ -82,32 +83,49 @@ export function useAssets(userId: number) {
      * Subscribe to balance updates
      */
     function subscribeToBalanceUpdates() {
-        if (!echo || typeof echo.private !== 'function') {
-            console.warn(
-                'Echo not initialized yet, skipping balance subscriptions',
-            );
-            return;
+        try {
+            const echoInstance = echo();
+
+            if (!echoInstance) {
+                console.warn(
+                    'Echo not initialized yet, skipping balance subscriptions',
+                );
+
+                return;
+            }
+
+            echoInstance
+                .private(`user.${userId}`)
+                .listen('.balance.updated', (event: any) => {
+                    console.log('Balance updated:', event.asset);
+
+                    // Update specific asset
+                    assets.value[event.asset.symbol] = event.asset;
+                });
+        } catch (error) {
+            console.error('Error subscribing to balance updates:', error);
         }
-
-        echo.private(`user.${userId}`).listen(
-            '.balance.updated',
-            (event: any) => {
-                console.log('Balance updated:', event.asset);
-
-                // Update specific asset
-                assets.value[event.asset.symbol] = event.asset;
-            },
-        );
     }
 
     /**
      * Unsubscribe from updates
      */
     function unsubscribe() {
-        if (echo && typeof echo.leave === 'function') {
-            echo.leave(`user.${userId}`);
+        try {
+            const echoInstance = echo();
+
+            if (echoInstance) {
+                echoInstance.leave(`user.${userId}`);
+            }
+        } catch (error) {
+            console.error('Error unsubscribing from balance updates:', error);
         }
     }
+
+    // Cleanup on unmount
+    onUnmounted(() => {
+        unsubscribe();
+    });
 
     return {
         assets,

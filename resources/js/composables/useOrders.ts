@@ -1,6 +1,5 @@
-import { ref } from 'vue';
-import { useEcho } from '@laravel/echo-vue';
-import { router } from '@inertiajs/vue3';
+import { echo } from '@laravel/echo-vue';
+import { ref, onUnmounted } from 'vue';
 
 interface Order {
     id: number;
@@ -21,7 +20,6 @@ interface PlaceOrderData {
 }
 
 export function useOrders(userId: number) {
-    const echo = useEcho();
     const orders = ref<Order[]>([]);
     const loading = ref(false);
     const error = ref<string | null>(null);
@@ -88,6 +86,7 @@ export function useOrders(userId: number) {
 
             if (!response.ok) {
                 const errorData = await response.json();
+
                 throw new Error(errorData.message || 'Failed to place order');
             }
 
@@ -100,6 +99,7 @@ export function useOrders(userId: number) {
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Unknown error';
             console.error('Error placing order:', err);
+
             throw err;
         } finally {
             loading.value = false;
@@ -132,6 +132,7 @@ export function useOrders(userId: number) {
 
             if (!response.ok) {
                 const errorData = await response.json();
+
                 throw new Error(errorData.message || 'Failed to cancel order');
             }
 
@@ -142,6 +143,7 @@ export function useOrders(userId: number) {
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Unknown error';
             console.error('Error cancelling order:', err);
+
             throw err;
         } finally {
             loading.value = false;
@@ -152,43 +154,61 @@ export function useOrders(userId: number) {
      * Subscribe to user's order updates
      */
     function subscribeToOrderUpdates() {
-        if (!echo || typeof echo.private !== 'function') {
-            console.warn(
-                'Echo not initialized yet, skipping order subscriptions',
-            );
-            return;
-        }
+        try {
+            const echoInstance = echo();
 
-        echo.private(`user.${userId}`).listen(
-            '.order.status.changed',
-            (event: any) => {
-                console.log('Order status changed:', event.order);
-
-                // Update order in list
-                const index = orders.value.findIndex(
-                    (o) => o.id === event.order.id,
+            if (!echoInstance) {
+                console.warn(
+                    'Echo not initialized yet, skipping order subscriptions',
                 );
-                if (index !== -1) {
-                    orders.value[index] = {
-                        ...orders.value[index],
-                        ...event.order,
-                    };
-                } else {
-                    // Add new order if not exists
-                    orders.value.unshift(event.order);
-                }
-            },
-        );
+
+                return;
+            }
+
+            echoInstance
+                .private(`user.${userId}`)
+                .listen('.order.status.changed', (event: any) => {
+                    console.log('Order status changed:', event.order);
+
+                    // Update order in list
+                    const index = orders.value.findIndex(
+                        (o) => o.id === event.order.id,
+                    );
+
+                    if (index !== -1) {
+                        orders.value[index] = {
+                            ...orders.value[index],
+                            ...event.order,
+                        };
+                    } else {
+                        // Add new order if not exists
+                        orders.value.unshift(event.order);
+                    }
+                });
+        } catch (error) {
+            console.error('Error subscribing to order updates:', error);
+        }
     }
 
     /**
      * Unsubscribe from updates
      */
     function unsubscribe() {
-        if (echo && typeof echo.leave === 'function') {
-            echo.leave(`user.${userId}`);
+        try {
+            const echoInstance = echo();
+
+            if (echoInstance) {
+                echoInstance.leave(`user.${userId}`);
+            }
+        } catch (error) {
+            console.error('Error unsubscribing from order updates:', error);
         }
     }
+
+    // Cleanup on unmount
+    onUnmounted(() => {
+        unsubscribe();
+    });
 
     return {
         orders,

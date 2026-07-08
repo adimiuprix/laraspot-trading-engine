@@ -1,8 +1,7 @@
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useEcho } from '@laravel/echo-vue';
+import { echo } from '@laravel/echo-vue';
+import { ref, onUnmounted } from 'vue';
 
 export function useOrderbook(symbol: string) {
-    const echo = useEcho();
     const orderbook = ref<{
         bids: Array<{ price: string; amount: string; total: string }>;
         asks: Array<{ price: string; amount: string; total: string }>;
@@ -71,25 +70,31 @@ export function useOrderbook(symbol: string) {
      * Subscribe to real-time orderbook updates
      */
     function subscribeToUpdates() {
-        if (!echo || typeof echo.channel !== 'function') {
-            console.warn(
-                'Echo not initialized yet, skipping orderbook subscriptions',
-            );
-            return;
-        }
+        try {
+            const echoInstance = echo();
 
-        echo.channel(`orderbook.${symbol}`).listen(
-            '.orderbook.updated',
-            (event: any) => {
-                console.log(
-                    'Orderbook update event received:',
-                    event.type,
-                    event,
+            if (!echoInstance) {
+                console.warn(
+                    'Echo not initialized yet, skipping orderbook subscriptions',
                 );
-                // Use debounced refresh to prevent multiple rapid fetches
-                debouncedRefresh();
-            },
-        );
+
+                return;
+            }
+
+            echoInstance
+                .channel(`orderbook.${symbol}`)
+                .listen('.orderbook.updated', (event: any) => {
+                    console.log(
+                        'Orderbook update event received:',
+                        event.type,
+                        event,
+                    );
+                    // Use debounced refresh to prevent multiple rapid fetches
+                    debouncedRefresh();
+                });
+        } catch (error) {
+            console.error('Error subscribing to orderbook updates:', error);
+        }
     }
 
     /**
@@ -102,10 +107,21 @@ export function useOrderbook(symbol: string) {
             refreshTimer = null;
         }
 
-        if (echo && typeof echo.leave === 'function') {
-            echo.leave(`orderbook.${symbol}`);
+        try {
+            const echoInstance = echo();
+
+            if (echoInstance) {
+                echoInstance.leave(`orderbook.${symbol}`);
+            }
+        } catch (error) {
+            console.error('Error unsubscribing from orderbook updates:', error);
         }
     }
+
+    // Cleanup on unmount
+    onUnmounted(() => {
+        unsubscribe();
+    });
 
     return {
         orderbook,

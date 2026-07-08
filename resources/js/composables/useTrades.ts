@@ -1,5 +1,5 @@
-import { ref } from 'vue';
-import { useEcho } from '@laravel/echo-vue';
+import { echo } from '@laravel/echo-vue';
+import { ref, onUnmounted } from 'vue';
 
 interface Trade {
     price: string;
@@ -10,7 +10,6 @@ interface Trade {
 }
 
 export function useTrades(symbol: string) {
-    const echo = useEcho();
     const trades = ref<Trade[]>([]);
     const loading = ref(true);
     const error = ref<string | null>(null);
@@ -48,37 +47,54 @@ export function useTrades(symbol: string) {
      * Subscribe to real-time trade updates
      */
     function subscribeToTrades() {
-        if (!echo || typeof echo.channel !== 'function') {
-            console.warn(
-                'Echo not initialized yet, skipping trades subscriptions',
-            );
-            return;
+        try {
+            const echoInstance = echo();
+
+            if (!echoInstance) {
+                console.warn(
+                    'Echo not initialized yet, skipping trades subscriptions',
+                );
+
+                return;
+            }
+
+            echoInstance
+                .channel(`trades.${symbol}`)
+                .listen('.trade.executed', (event: any) => {
+                    console.log('New trade:', event.trade);
+
+                    // Add new trade to the top
+                    trades.value.unshift(event.trade);
+
+                    // Keep only last 50 trades
+                    if (trades.value.length > 50) {
+                        trades.value.pop();
+                    }
+                });
+        } catch (error) {
+            console.error('Error subscribing to trades:', error);
         }
-
-        echo.channel(`trades.${symbol}`).listen(
-            '.trade.executed',
-            (event: any) => {
-                console.log('New trade:', event.trade);
-
-                // Add new trade to the top
-                trades.value.unshift(event.trade);
-
-                // Keep only last 50 trades
-                if (trades.value.length > 50) {
-                    trades.value.pop();
-                }
-            },
-        );
     }
 
     /**
      * Unsubscribe from trade updates
      */
     function unsubscribe() {
-        if (echo && typeof echo.leave === 'function') {
-            echo.leave(`trades.${symbol}`);
+        try {
+            const echoInstance = echo();
+
+            if (echoInstance) {
+                echoInstance.leave(`trades.${symbol}`);
+            }
+        } catch (error) {
+            console.error('Error unsubscribing from trades:', error);
         }
     }
+
+    // Cleanup on unmount
+    onUnmounted(() => {
+        unsubscribe();
+    });
 
     return {
         trades,
