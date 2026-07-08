@@ -92,8 +92,8 @@ export function useOrders(userId: number) {
 
             const data = await response.json();
 
-            // Refresh orders list
-            await fetchOrders();
+            // Don't refresh orders list here - let the WebSocket event handle it
+            // This prevents duplicate orders from appearing
 
             return data.data || data;
         } catch (err) {
@@ -136,8 +136,8 @@ export function useOrders(userId: number) {
                 throw new Error(errorData.message || 'Failed to cancel order');
             }
 
-            // Remove from local state
-            orders.value = orders.value.filter((o) => o.id !== orderId);
+            // Don't remove from local state here - let the WebSocket event handle it
+            // This prevents race conditions and ensures consistency
 
             return true;
         } catch (err) {
@@ -170,19 +170,28 @@ export function useOrders(userId: number) {
                 .listen('.order.status.changed', (event: any) => {
                     console.log('Order status changed:', event.order);
 
-                    // Update order in list
                     const index = orders.value.findIndex(
                         (o) => o.id === event.order.id,
                     );
 
                     if (index !== -1) {
-                        orders.value[index] = {
-                            ...orders.value[index],
-                            ...event.order,
-                        };
+                        // Order exists in list
+                        if (event.order.status === 'cancelled') {
+                            // Remove cancelled orders from list
+                            orders.value.splice(index, 1);
+                        } else {
+                            // Update order status
+                            orders.value[index] = {
+                                ...orders.value[index],
+                                ...event.order,
+                            };
+                        }
                     } else {
-                        // Add new order if not exists
-                        orders.value.unshift(event.order);
+                        // Order doesn't exist in list
+                        // Only add if it's a new open order (not cancelled or filled)
+                        if (event.order.status === 'open') {
+                            orders.value.unshift(event.order);
+                        }
                     }
                 });
         } catch (error) {
