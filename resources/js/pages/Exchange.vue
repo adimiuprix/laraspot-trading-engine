@@ -1,6 +1,54 @@
-<script setup>
-import { ref } from 'vue';
-import { router } from '@inertiajs/vue3';
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { router, usePage } from '@inertiajs/vue3';
+import { useOrderbook } from '@/composables/useOrderbook';
+import { useTrades } from '@/composables/useTrades';
+import { useOrders } from '@/composables/useOrders';
+import { useAssets } from '@/composables/useAssets';
+
+// Get user from page props
+const page = usePage();
+const user = computed(() => page.props.auth.user);
+
+// Trading pair
+const symbol = 'BTC/USDT';
+
+// Composables for real-time data
+const {
+    orderbook,
+    loading: orderbookLoading,
+    fetchOrderbook,
+    subscribeToUpdates: subscribeOrderbook,
+    unsubscribe: unsubscribeOrderbook,
+} = useOrderbook(symbol);
+
+const {
+    trades: recentTrades,
+    loading: tradesLoading,
+    fetchTrades,
+    subscribeToTrades,
+    unsubscribe: unsubscribeTrades,
+} = useTrades(symbol);
+
+const {
+    orders: userOrders,
+    loading: ordersLoading,
+    error: ordersError,
+    fetchOrders,
+    placeOrder: submitOrder,
+    cancelOrder: removeOrder,
+    subscribeToOrderUpdates,
+    unsubscribe: unsubscribeOrders,
+} = useOrders(user.value.id);
+
+const {
+    assets,
+    loading: assetsLoading,
+    fetchAssets,
+    getAvailableBalance,
+    subscribeToBalanceUpdates,
+    unsubscribe: unsubscribeAssets,
+} = useAssets(user.value.id);
 
 // State untuk tab order (Buy/Sell)
 const activeOrderTab = ref('buy');
@@ -12,71 +60,128 @@ const orderForm = ref({
     total: ''
 });
 
-// Static orderbook data
-const orderbook = ref({
-    bids: [
-        { price: 42150.50, amount: 1.254, total: 52860.73 },
-        { price: 42149.20, amount: 0.850, total: 35826.82 },
-        { price: 42148.00, amount: 2.100, total: 88510.80 },
-        { price: 42147.30, amount: 0.450, total: 18966.29 },
-        { price: 42145.10, amount: 1.750, total: 73753.93 },
-        { price: 42144.80, amount: 0.920, total: 38773.22 },
-        { price: 42143.50, amount: 1.320, total: 55629.42 },
-        { price: 42142.00, amount: 0.680, total: 28656.56 }
-    ],
-    asks: [
-        { price: 42151.00, amount: 0.950, total: 40043.45 },
-        { price: 42152.30, amount: 1.420, total: 59856.27 },
-        { price: 42153.80, amount: 0.730, total: 30772.27 },
-        { price: 42155.00, amount: 2.100, total: 88525.50 },
-        { price: 42156.50, amount: 0.850, total: 35832.03 },
-        { price: 42157.20, amount: 1.560, total: 65765.23 },
-        { price: 42158.40, amount: 0.420, total: 17706.53 },
-        { price: 42159.00, amount: 1.890, total: 79680.51 }
-    ]
+// Loading state for order submission
+const submitting = ref(false);
+const submitError = ref<string | null>(null);
+const submitSuccess = ref(false);
+
+// Computed values
+const currentBalance = computed(() => {
+    const asset = activeOrderTab.value === 'buy' ? 'USDT' : 'BTC';
+    return getAvailableBalance(asset);
 });
 
-// Static recent trades
-const recentTrades = ref([
-    { price: 42150.80, amount: 0.124, time: '14:23:45', type: 'buy' },
-    { price: 42150.20, amount: 0.580, time: '14:23:42', type: 'sell' },
-    { price: 42151.00, amount: 0.250, time: '14:23:38', type: 'buy' },
-    { price: 42149.50, amount: 1.120, time: '14:23:35', type: 'sell' },
-    { price: 42150.00, amount: 0.420, time: '14:23:30', type: 'buy' },
-    { price: 42148.80, amount: 0.890, time: '14:23:25', type: 'sell' },
-    { price: 42149.20, amount: 0.350, time: '14:23:20', type: 'buy' },
-    { price: 42150.50, amount: 0.670, time: '14:23:15', type: 'sell' }
-]);
+const currentPrice = computed(() => {
+    return orderbook.value.last_price || '0';
+});
 
 // Functions
 function logout() {
     router.post('/logout');
 }
 
-function setOrderTab(tab) {
+function setOrderTab(tab: 'buy' | 'sell') {
     activeOrderTab.value = tab;
+    orderForm.value = { price: '', amount: '', total: '' };
 }
 
 function calculateTotal() {
     if (orderForm.value.price && orderForm.value.amount) {
-        orderForm.value.total = (parseFloat(orderForm.value.price) * parseFloat(orderForm.value.amount)).toFixed(2);
+        const total = parseFloat(orderForm.value.price) * parseFloat(orderForm.value.amount);
+        orderForm.value.total = total.toFixed(8);
     }
 }
 
-function setPercentage(percent) {
-    // Simulasi set percentage dari balance
-    orderForm.value.amount = '';
+function setPercentage(percent: number) {
+    const balance = parseFloat(currentBalance.value);
+    if (!balance || !orderForm.value.price) return;
+
+    const price = parseFloat(orderForm.value.price);
+    
+    if (activeOrderTab.value === 'buy') {
+        // Calculate amount based on USDT balance
+        const availableUsdt = balance * (percent / 100);
+        orderForm.value.amount = (availableUsdt / price).toFixed(8);
+    } else {
+        // Calculate amount based on BTC balance
+        orderForm.value.amount = (balance * (percent / 100)).toFixed(8);
+    }
+    
     calculateTotal();
 }
 
-function placeOrder() {
-    console.log('Order placed:', {
-        type: activeOrderTab.value,
-        ...orderForm.value
-    });
-    // Reset form
-    orderForm.value = { price: '', amount: '', total: '' };
+async function placeOrder() {
+    if (!orderForm.value.price || !orderForm.value.amount) {
+        submitError.value = 'Price and amount are required';
+        return;
+    }
+
+    try {
+        submitting.value = true;
+        submitError.value = null;
+        submitSuccess.value = false;
+
+        await submitOrder({
+            symbol,
+            side: activeOrderTab.value,
+            price: orderForm.value.price,
+            amount: orderForm.value.amount,
+        });
+
+        // Success!
+        submitSuccess.value = true;
+        orderForm.value = { price: '', amount: '', total: '' };
+
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+            submitSuccess.value = false;
+        }, 3000);
+    } catch (error) {
+        submitError.value = error instanceof Error ? error.message : 'Failed to place order';
+    } finally {
+        submitting.value = false;
+    }
 }
+
+async function cancelOrder(orderId: number) {
+    if (!confirm('Are you sure you want to cancel this order?')) return;
+
+    try {
+        await removeOrder(orderId);
+    } catch (error) {
+        alert('Failed to cancel order: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+}
+
+function formatTime(isoString: string) {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString('en-US', { hour12: false });
+}
+
+// Lifecycle
+onMounted(async () => {
+    // Fetch initial data
+    await Promise.all([
+        fetchOrderbook(),
+        fetchTrades(),
+        fetchOrders('open'),
+        fetchAssets(),
+    ]);
+
+    // Subscribe to real-time updates
+    subscribeOrderbook();
+    subscribeToTrades();
+    subscribeToOrderUpdates();
+    subscribeToBalanceUpdates();
+});
+
+onUnmounted(() => {
+    // Cleanup subscriptions
+    unsubscribeOrderbook();
+    unsubscribeTrades();
+    unsubscribeOrders();
+    unsubscribeAssets();
+});
 </script>
 
 <template>
@@ -147,7 +252,14 @@ function placeOrder() {
                     <div class="px-4 py-2 border-b border-gray-700">
                         <h3 class="text-sm font-semibold">Recent Trades</h3>
                     </div>
-                    <div class="overflow-y-auto h-[calc(100%-2.5rem)]">
+                    
+                    <div v-if="tradesLoading" class="flex items-center justify-center h-[calc(100%-2.5rem)]">
+                        <div class="text-center text-gray-500 text-xs">
+                            <div class="animate-pulse">Loading trades...</div>
+                        </div>
+                    </div>
+
+                    <div v-else class="overflow-y-auto h-[calc(100%-2.5rem)]">
                         <table class="w-full text-xs">
                             <thead class="text-gray-500 border-b border-gray-700 sticky top-0 bg-gray-800">
                                 <tr>
@@ -162,11 +274,11 @@ function placeOrder() {
                                     :key="index"
                                     class="border-b border-gray-700/50 hover:bg-gray-750"
                                 >
-                                    <td class="px-4 py-2" :class="trade.type === 'buy' ? 'text-green-400' : 'text-red-400'">
-                                        {{ trade.price.toLocaleString() }}
+                                    <td class="px-4 py-2" :class="trade.side === 'buy' ? 'text-green-400' : 'text-red-400'">
+                                        {{ parseFloat(trade.price).toLocaleString() }}
                                     </td>
                                     <td class="px-4 py-2 text-right text-gray-300">{{ trade.amount }}</td>
-                                    <td class="px-4 py-2 text-right text-gray-500">{{ trade.time }}</td>
+                                    <td class="px-4 py-2 text-right text-gray-500">{{ formatTime(trade.time) }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -179,7 +291,14 @@ function placeOrder() {
                 <div class="px-4 py-2 border-b border-gray-700">
                     <h3 class="text-sm font-semibold">Order Book</h3>
                 </div>
-                <div class="h-[calc(100%-2.5rem)] overflow-y-auto">
+                
+                <div v-if="orderbookLoading" class="h-[calc(100%-2.5rem)] flex items-center justify-center">
+                    <div class="text-center text-gray-500">
+                        <div class="animate-pulse">Loading orderbook...</div>
+                    </div>
+                </div>
+
+                <div v-else class="h-[calc(100%-2.5rem)] overflow-y-auto">
                     <!-- Asks (Sell Orders) -->
                     <div class="mb-2">
                         <table class="w-full text-xs">
@@ -197,11 +316,11 @@ function placeOrder() {
                                     class="hover:bg-gray-750 cursor-pointer relative"
                                 >
                                     <td class="px-3 py-1 text-red-400 relative z-10">
-                                        {{ ask.price.toLocaleString() }}
+                                        {{ parseFloat(ask.price).toLocaleString() }}
                                     </td>
                                     <td class="px-3 py-1 text-right text-gray-300 relative z-10">{{ ask.amount }}</td>
-                                    <td class="px-3 py-1 text-right text-gray-500 relative z-10">{{ ask.total.toFixed(2) }}</td>
-                                    <div class="absolute inset-0 bg-red-900/10" :style="{ width: (ask.amount / 2.5 * 100) + '%' }"></div>
+                                    <td class="px-3 py-1 text-right text-gray-500 relative z-10">{{ parseFloat(ask.total).toFixed(2) }}</td>
+                                    <div class="absolute inset-0 bg-red-900/10" :style="{ width: (parseFloat(ask.amount) / 2.5 * 100) + '%' }"></div>
                                 </tr>
                             </tbody>
                         </table>
@@ -209,8 +328,8 @@ function placeOrder() {
 
                     <!-- Spread -->
                     <div class="py-2 px-3 bg-gray-750 text-center">
-                        <div class="text-lg font-semibold text-green-400">42,150.50</div>
-                        <div class="text-xs text-gray-500">Spread: 0.50 (0.01%)</div>
+                        <div class="text-lg font-semibold text-green-400">{{ parseFloat(currentPrice).toLocaleString() }}</div>
+                        <div class="text-xs text-gray-500">Spread: {{ orderbook.spread }} ({{ ((parseFloat(orderbook.spread) / parseFloat(currentPrice)) * 100).toFixed(2) }}%)</div>
                     </div>
 
                     <!-- Bids (Buy Orders) -->
@@ -223,11 +342,11 @@ function placeOrder() {
                                     class="hover:bg-gray-750 cursor-pointer relative"
                                 >
                                     <td class="px-3 py-1 text-green-400 relative z-10">
-                                        {{ bid.price.toLocaleString() }}
+                                        {{ parseFloat(bid.price).toLocaleString() }}
                                     </td>
                                     <td class="px-3 py-1 text-right text-gray-300 relative z-10">{{ bid.amount }}</td>
-                                    <td class="px-3 py-1 text-right text-gray-500 relative z-10">{{ bid.total.toFixed(2) }}</td>
-                                    <div class="absolute inset-0 bg-green-900/10" :style="{ width: (bid.amount / 2.5 * 100) + '%' }"></div>
+                                    <td class="px-3 py-1 text-right text-gray-500 relative z-10">{{ parseFloat(bid.total).toFixed(2) }}</td>
+                                    <div class="absolute inset-0 bg-green-900/10" :style="{ width: (parseFloat(bid.amount) / 2.5 * 100) + '%' }"></div>
                                 </tr>
                             </tbody>
                         </table>
@@ -261,9 +380,22 @@ function placeOrder() {
                         <div class="flex justify-between mb-1">
                             <span class="text-gray-400">Available</span>
                             <span class="text-gray-200">
-                                {{ activeOrderTab === 'buy' ? '10,000.00 USD' : '0.5000 BTC' }}
+                                <span v-if="assetsLoading" class="animate-pulse">Loading...</span>
+                                <span v-else>
+                                    {{ currentBalance }} {{ activeOrderTab === 'buy' ? 'USDT' : 'BTC' }}
+                                </span>
                             </span>
                         </div>
+                    </div>
+
+                    <!-- Success Message -->
+                    <div v-if="submitSuccess" class="mb-4 p-3 bg-green-900/20 border border-green-500/50 rounded text-sm text-green-400">
+                        Order placed successfully!
+                    </div>
+
+                    <!-- Error Message -->
+                    <div v-if="submitError" class="mb-4 p-3 bg-red-900/20 border border-red-500/50 rounded text-sm text-red-400">
+                        {{ submitError }}
                     </div>
 
                     <!-- Order Form -->
@@ -332,12 +464,22 @@ function placeOrder() {
                         <!-- Submit Button -->
                         <button
                             type="submit"
-                            class="w-full py-3 rounded font-medium transition"
+                            :disabled="submitting"
+                            class="w-full py-3 rounded font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                             :class="activeOrderTab === 'buy' 
                                 ? 'bg-green-600 hover:bg-green-700 text-white' 
                                 : 'bg-red-600 hover:bg-red-700 text-white'"
                         >
-                            {{ activeOrderTab === 'buy' ? 'Buy BTC' : 'Sell BTC' }}
+                            <span v-if="submitting">
+                                <svg class="inline w-4 h-4 mr-2 animate-spin" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Processing...
+                            </span>
+                            <span v-else>
+                                {{ activeOrderTab === 'buy' ? 'Buy BTC' : 'Sell BTC' }}
+                            </span>
                         </button>
                     </form>
 
@@ -345,10 +487,48 @@ function placeOrder() {
                     <div class="mt-6">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="text-sm font-semibold">Open Orders</h3>
-                            <button class="text-xs text-indigo-400 hover:text-indigo-300">View All</button>
+                            <button @click="fetchOrders('open')" class="text-xs text-indigo-400 hover:text-indigo-300">
+                                <svg class="inline w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                Refresh
+                            </button>
                         </div>
-                        <div class="text-center py-8 text-gray-500 text-xs">
+
+                        <div v-if="ordersLoading" class="text-center py-8 text-gray-500 text-xs">
+                            <div class="animate-pulse">Loading orders...</div>
+                        </div>
+
+                        <div v-else-if="userOrders.length === 0" class="text-center py-8 text-gray-500 text-xs">
                             No open orders
+                        </div>
+
+                        <div v-else class="space-y-2">
+                            <div
+                                v-for="order in userOrders"
+                                :key="order.id"
+                                class="p-2 bg-gray-750 rounded text-xs"
+                            >
+                                <div class="flex justify-between items-start mb-1">
+                                    <span :class="order.side === 'buy' ? 'text-green-400' : 'text-red-400'" class="font-semibold">
+                                        {{ order.side.toUpperCase() }}
+                                    </span>
+                                    <button
+                                        @click="cancelOrder(order.id)"
+                                        class="text-red-400 hover:text-red-300"
+                                        title="Cancel order"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="text-gray-400 space-y-0.5">
+                                    <div>Price: <span class="text-gray-200">{{ parseFloat(order.price).toLocaleString() }}</span></div>
+                                    <div>Amount: <span class="text-gray-200">{{ order.amount }}</span></div>
+                                    <div>Total: <span class="text-gray-200">{{ order.total }}</span></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
