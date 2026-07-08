@@ -13,7 +13,8 @@ export function useOrderbook(symbol: string) {
         last_price: '0',
         spread: '0',
     });
-    const loading = ref(true);
+    const loading = ref(true); // Only for initial load
+    const refreshing = ref(false); // For subsequent updates
     const error = ref<string | null>(null);
 
     // Debounce timer for refresh
@@ -23,9 +24,14 @@ export function useOrderbook(symbol: string) {
     /**
      * Fetch orderbook from API
      */
-    async function fetchOrderbook() {
+    async function fetchOrderbook(isInitial = false) {
         try {
-            loading.value = true;
+            // Only show loading spinner on initial load
+            if (isInitial) {
+                loading.value = true;
+            } else {
+                refreshing.value = true;
+            }
             error.value = null;
 
             // Symbol format: BTCUSDT (no slash needed)
@@ -36,13 +42,16 @@ export function useOrderbook(symbol: string) {
             }
 
             const data = await response.json();
-            console.log('Orderbook data:', data); // Debug log
             orderbook.value = data;
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Unknown error';
             console.error('Error fetching orderbook:', err);
         } finally {
-            loading.value = false;
+            if (isInitial) {
+                loading.value = false;
+            } else {
+                refreshing.value = false;
+            }
         }
     }
 
@@ -57,8 +66,7 @@ export function useOrderbook(symbol: string) {
 
         // Set new timer
         refreshTimer = setTimeout(() => {
-            console.log('Debounced orderbook refresh triggered');
-            fetchOrderbook();
+            fetchOrderbook(false); // Not initial load, so no loading spinner
             refreshTimer = null;
         }, DEBOUNCE_DELAY);
     }
@@ -81,12 +89,8 @@ export function useOrderbook(symbol: string) {
             echoInstance
                 .channel(`orderbook.${symbol}`)
                 .listen('.orderbook.updated', (event: any) => {
-                    console.log(
-                        'Orderbook update event received:',
-                        event.type,
-                        event,
-                    );
                     // Use debounced refresh to prevent multiple rapid fetches
+                    // This won't trigger loading spinner, just updates data smoothly
                     debouncedRefresh();
                 });
         } catch (error) {
@@ -123,6 +127,7 @@ export function useOrderbook(symbol: string) {
     return {
         orderbook,
         loading,
+        refreshing,
         error,
         fetchOrderbook,
         subscribeToUpdates,

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+
 interface Order {
     id: number;
     symbol: string;
@@ -18,6 +20,20 @@ const emit = defineEmits<{
     refresh: [];
     cancel: [orderId: number];
 }>();
+
+const cancellingOrderId = ref<number | null>(null);
+
+async function handleCancel(orderId: number) {
+    cancellingOrderId.value = orderId;
+    try {
+        emit('cancel', orderId);
+    } finally {
+        // Reset after a short delay to allow WebSocket to remove the order
+        setTimeout(() => {
+            cancellingOrderId.value = null;
+        }, 500);
+    }
+}
 </script>
 
 <template>
@@ -78,7 +94,11 @@ const emit = defineEmits<{
                 <div
                     v-for="order in orders"
                     :key="order.id"
-                    class="rounded-lg border border-gray-700 bg-gray-900 p-3 transition-colors hover:border-gray-600"
+                    class="rounded-lg border border-gray-700 bg-gray-900 p-3 transition-all"
+                    :class="{
+                        'opacity-50 pointer-events-none':
+                            cancellingOrderId === order.id,
+                    }"
                 >
                     <div class="mb-2 flex items-center justify-between">
                         <div class="flex items-center gap-2">
@@ -97,11 +117,13 @@ const emit = defineEmits<{
                             }}</span>
                         </div>
                         <button
-                            @click="emit('cancel', order.id)"
-                            class="text-red-400 transition-colors hover:text-red-300"
+                            @click="handleCancel(order.id)"
+                            :disabled="cancellingOrderId === order.id"
+                            class="text-red-400 transition-colors hover:text-red-300 disabled:opacity-50"
                             title="Cancel order"
                         >
                             <svg
+                                v-if="cancellingOrderId !== order.id"
                                 class="h-4 w-4"
                                 fill="none"
                                 stroke="currentColor"
@@ -112,6 +134,26 @@ const emit = defineEmits<{
                                     stroke-linejoin="round"
                                     stroke-width="2"
                                     d="M6 18L18 6M6 6l12 12"
+                                ></path>
+                            </svg>
+                            <svg
+                                v-else
+                                class="h-4 w-4 animate-spin"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"
+                                ></circle>
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                 ></path>
                             </svg>
                         </button>

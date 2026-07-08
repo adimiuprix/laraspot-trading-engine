@@ -165,7 +165,7 @@ async function cancelOrder(orderId: number) {
 // Lifecycle
 onMounted(async () => {
     await Promise.all([
-        fetchOrderbook(),
+        fetchOrderbook(true),
         fetchTrades(),
         fetchOrders('open'),
         fetchAssets(),

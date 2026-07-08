@@ -33,7 +33,8 @@ defineProps<{
             </div>
         </div>
 
-        <div v-else class="h-[calc(100%-2.5rem)] overflow-y-auto">
+        <!-- No more v-else, so orderbook stays visible during refreshes -->
+        <div v-show="!loading" class="h-[calc(100%-2.5rem)] overflow-y-auto">
             <!-- Asks (Sell Orders) -->
             <div class="mb-2">
                 <table class="w-full text-xs">

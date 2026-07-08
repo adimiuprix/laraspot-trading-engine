@@ -22,6 +22,7 @@ interface PlaceOrderData {
 export function useOrders(userId: number) {
     const orders = ref<Order[]>([]);
     const loading = ref(false);
+    const processing = ref(false); // For place/cancel operations
     const error = ref<string | null>(null);
 
     /**
@@ -64,7 +65,7 @@ export function useOrders(userId: number) {
      */
     async function placeOrder(orderData: PlaceOrderData) {
         try {
-            loading.value = true;
+            processing.value = true; // Use processing instead of loading
             error.value = null;
 
             const response = await fetch('/api/orders', {
@@ -102,7 +103,7 @@ export function useOrders(userId: number) {
 
             throw err;
         } finally {
-            loading.value = false;
+            processing.value = false;
         }
     }
 
@@ -111,7 +112,7 @@ export function useOrders(userId: number) {
      */
     async function cancelOrder(orderId: number) {
         try {
-            loading.value = true;
+            processing.value = true; // Use processing instead of loading
             error.value = null;
 
             const response = await fetch(`/api/orders/${orderId}`, {
@@ -146,7 +147,7 @@ export function useOrders(userId: number) {
 
             throw err;
         } finally {
-            loading.value = false;
+            processing.value = false;
         }
     }
 
@@ -222,6 +223,7 @@ export function useOrders(userId: number) {
     return {
         orders,
         loading,
+        processing,
         error,
         fetchOrders,
         placeOrder,
