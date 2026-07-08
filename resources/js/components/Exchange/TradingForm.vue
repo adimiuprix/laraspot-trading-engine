@@ -22,7 +22,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    'update:orderForm': [value: OrderForm];
+    'update-price': [value: string];
+    'update-amount': [value: string];
     'set-order-tab': [tab: 'buy' | 'sell'];
     'set-order-type': [type: 'limit' | 'market'];
     'validate-input': [event: Event];
@@ -34,14 +35,6 @@ const emit = defineEmits<{
 const assetSymbol = computed(() =>
     props.activeOrderTab === 'buy' ? 'USDT' : 'BTC',
 );
-
-function updatePrice(value: string) {
-    emit('update:orderForm', { ...props.orderForm, price: value });
-}
-
-function updateAmount(value: string) {
-    emit('update:orderForm', { ...props.orderForm, amount: value });
-}
 </script>
 
 <template>
@@ -212,7 +205,8 @@ function updateAmount(value: string) {
                             <input
                                 :value="orderForm.price"
                                 @input="
-                                    updatePrice(
+                                    emit(
+                                        'update-price',
                                         ($event.target as HTMLInputElement)
                                             .value,
                                     );
@@ -267,7 +261,8 @@ function updateAmount(value: string) {
                             <input
                                 :value="orderForm.amount"
                                 @input="
-                                    updateAmount(
+                                    emit(
+                                        'update-amount',
                                         ($event.target as HTMLInputElement)
                                             .value,
                                     );

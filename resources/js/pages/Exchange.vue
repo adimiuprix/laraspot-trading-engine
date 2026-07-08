@@ -215,6 +215,8 @@ onUnmounted(() => {
                     :submit-error="submitError"
                     :submit-success="submitSuccess"
                     :assets-loading="assetsLoading"
+                    @update-price="(value) => (orderForm.price = value)"
+                    @update-amount="(value) => (orderForm.amount = value)"
                     @set-order-tab="handleSetOrderTab"
                     @set-order-type="setOrderType"
                     @validate-input="validateNumberInput"
