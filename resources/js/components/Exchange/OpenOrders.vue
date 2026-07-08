@@ -234,20 +234,9 @@ function getStatusLabel(status?: string): string {
                             </div>
                         </div>
                         <div>
-                            <div class="mb-0.5 text-gray-500">
-                                {{
-                                    order.status === 'partially_filled'
-                                        ? 'Remaining'
-                                        : 'Amount'
-                                }}
-                            </div>
+                            <div class="mb-0.5 text-gray-500">Amount</div>
                             <div class="font-medium text-white">
-                                {{
-                                    order.status === 'partially_filled' &&
-                                    order.remaining_amount
-                                        ? order.remaining_amount
-                                        : order.amount
-                                }}
+                                {{ order.remaining_amount || order.amount }}
                             </div>
                         </div>
                         <div>

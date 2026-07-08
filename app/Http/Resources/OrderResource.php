@@ -21,6 +21,8 @@ class OrderResource extends JsonResource
             'side' => $this->side,
             'price' => $this->price,
             'amount' => $this->amount,
+            'filled_amount' => $this->filled_amount,
+            'remaining_amount' => $this->remaining_amount,
             'total' => $this->total_value,
             'status' => $this->status,
             'created_at' => $this->created_at->toIso8601String(),

@@ -7,8 +7,10 @@ interface Order {
     side: 'buy' | 'sell';
     price: string;
     amount: string;
+    filled_amount?: string;
+    remaining_amount?: string;
     total: string;
-    status: 'open' | 'filled' | 'cancelled';
+    status: 'open' | 'partially_filled' | 'filled' | 'cancelled';
     created_at: string;
 }
 
@@ -52,6 +54,47 @@ export function useOrders(userId: number) {
 
             const data = await response.json();
             orders.value = data.data || data;
+        } catch (err) {
+            error.value = err instanceof Error ? err.message : 'Unknown error';
+            console.error('Error fetching orders:', err);
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    /**
+     * Fetch active orders (open + partially_filled)
+     */
+    async function fetchActiveOrders() {
+        try {
+            loading.value = true;
+            error.value = null;
+
+            const response = await fetch('/api/orders', {
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error(
+                    `Failed to fetch orders: ${response.status} ${response.statusText}`,
+                );
+            }
+
+            const data = await response.json();
+            const allOrders = data.data || data;
+
+            // Filter to only show active orders (open or partially_filled)
+            orders.value = allOrders.filter(
+                (order: Order) =>
+                    order.status === 'open' ||
+                    order.status === 'partially_filled',
+            );
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Unknown error';
             console.error('Error fetching orders:', err);
@@ -177,11 +220,14 @@ export function useOrders(userId: number) {
 
                     if (index !== -1) {
                         // Order exists in list
-                        if (event.order.status === 'cancelled') {
-                            // Remove cancelled orders from list
+                        if (
+                            event.order.status === 'cancelled' ||
+                            event.order.status === 'filled'
+                        ) {
+                            // Remove cancelled and fully filled orders from active orders list
                             orders.value.splice(index, 1);
                         } else {
-                            // Update order status
+                            // Update order (including partially_filled)
                             orders.value[index] = {
                                 ...orders.value[index],
                                 ...event.order,
@@ -189,8 +235,11 @@ export function useOrders(userId: number) {
                         }
                     } else {
                         // Order doesn't exist in list
-                        // Only add if it's a new open order (not cancelled or filled)
-                        if (event.order.status === 'open') {
+                        // Add if it's an active order (open or partially_filled)
+                        if (
+                            event.order.status === 'open' ||
+                            event.order.status === 'partially_filled'
+                        ) {
                             orders.value.unshift(event.order);
                         }
                     }
@@ -226,6 +275,7 @@ export function useOrders(userId: number) {
         processing,
         error,
         fetchOrders,
+        fetchActiveOrders,
         placeOrder,
         cancelOrder,
         subscribeToOrderUpdates,

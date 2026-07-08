@@ -41,6 +41,7 @@ const {
     orders: userOrders,
     loading: ordersLoading,
     fetchOrders,
+    fetchActiveOrders,
     placeOrder: submitOrder,
     cancelOrder: removeOrder,
     subscribeToOrderUpdates,
@@ -167,7 +168,7 @@ onMounted(async () => {
     await Promise.all([
         fetchOrderbook(true),
         fetchTrades(),
-        fetchOrders('open'),
+        fetchActiveOrders(), // Fetch active orders (open + partially_filled)
         fetchAssets(),
     ]);
 
@@ -230,7 +231,7 @@ onUnmounted(() => {
                     :orders="userOrders"
                     :loading="ordersLoading"
                     :symbol="symbol"
-                    @refresh="() => fetchOrders('open')"
+                    @refresh="fetchActiveOrders"
                     @cancel="cancelOrder"
                 />
             </div>
