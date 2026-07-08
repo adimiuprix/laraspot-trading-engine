@@ -53,6 +53,9 @@ const {
 // State untuk tab order (Buy/Sell)
 const activeOrderTab = ref('buy');
 
+// State untuk order type (Limit/Market)
+const orderType = ref('limit');
+
 // State untuk order form
 const orderForm = ref({
     price: '',
@@ -75,6 +78,19 @@ const currentPrice = computed(() => {
     return orderbook.value.last_price || '0';
 });
 
+const estimatedFee = computed(() => {
+    if (!orderForm.value.total) return '0.00';
+    const total = parseFloat(orderForm.value.total);
+    return (total * 0.001).toFixed(8); // 0.1% fee
+});
+
+const totalWithFee = computed(() => {
+    if (!orderForm.value.total) return '0.00';
+    const total = parseFloat(orderForm.value.total);
+    const fee = parseFloat(estimatedFee.value);
+    return (total + fee).toFixed(8);
+});
+
 // Functions
 function logout() {
     router.post('/logout');
@@ -94,7 +110,22 @@ function calculateTotal() {
 
 function setPercentage(percent: number) {
     const balance = parseFloat(currentBalance.value);
-    if (!balance || !orderForm.value.price) return;
+    
+    if (!orderForm.value.price) {
+        submitError.value = 'Please enter price first';
+        setTimeout(() => {
+            submitError.value = null;
+        }, 3000);
+        return;
+    }
+    
+    if (!balance || balance === 0) {
+        submitError.value = 'Insufficient balance';
+        setTimeout(() => {
+            submitError.value = null;
+        }, 3000);
+        return;
+    }
 
     const price = parseFloat(orderForm.value.price);
     

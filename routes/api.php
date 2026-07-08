@@ -32,5 +32,5 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Public endpoints (no auth required)
-Route::get('/orderbook/{symbol}', [OrderBookController::class, 'show']);
-Route::get('/trades/{symbol}', [TradeController::class, 'index']);
+Route::get('/orderbook/{symbol}', [OrderBookController::class, 'show'])->where('symbol', '.*');
+Route::get('/trades/{symbol}', [TradeController::class, 'index'])->where('symbol', '.*');

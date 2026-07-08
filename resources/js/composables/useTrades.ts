@@ -23,13 +23,16 @@ export function useTrades(symbol: string) {
             loading.value = true;
             error.value = null;
 
-            const response = await fetch(`/api/trades/${symbol}?limit=50`);
+            // Encode symbol untuk handle slash di URL
+            const encodedSymbol = encodeURIComponent(symbol);
+            const response = await fetch(`/api/trades/${encodedSymbol}?limit=50`);
             
             if (!response.ok) {
                 throw new Error('Failed to fetch trades');
             }
 
             const data = await response.json();
+            console.log('Trades data:', data); // Debug log
             trades.value = data.data || data; // Handle Laravel Resource response
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Unknown error';

@@ -25,13 +25,16 @@ export function useOrderbook(symbol: string) {
             loading.value = true;
             error.value = null;
 
-            const response = await fetch(`/api/orderbook/${symbol}?depth=20`);
+            // Encode symbol untuk handle slash di URL (BTC/USDT -> BTC%2FUSDT)
+            const encodedSymbol = encodeURIComponent(symbol);
+            const response = await fetch(`/api/orderbook/${encodedSymbol}?depth=20`);
             
             if (!response.ok) {
                 throw new Error('Failed to fetch orderbook');
             }
 
             const data = await response.json();
+            console.log('Orderbook data:', data); // Debug log
             orderbook.value = data;
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Unknown error';
