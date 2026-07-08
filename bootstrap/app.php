@@ -21,6 +21,19 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        // Enable session & auth for API routes (for SPA authentication)
+        $middleware->api(prepend: [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+        ]);
+
+        // Exclude API routes from CSRF verification (since we're using session-based SPA auth)
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'broadcasting/auth', // Allow broadcasting auth without CSRF
+        ]);
+
         $middleware->redirectGuestsTo('/');
         $middleware->redirectUsersTo('/exchange');
     })

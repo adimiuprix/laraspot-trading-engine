@@ -17,6 +17,10 @@ export function useOrderbook(symbol: string) {
     const loading = ref(true);
     const error = ref<string | null>(null);
 
+    // Debounce timer for refresh
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const DEBOUNCE_DELAY = 300; // 300ms debounce
+
     /**
      * Fetch orderbook from API
      */
@@ -27,8 +31,10 @@ export function useOrderbook(symbol: string) {
 
             // Encode symbol untuk handle slash di URL (BTC/USDT -> BTC%2FUSDT)
             const encodedSymbol = encodeURIComponent(symbol);
-            const response = await fetch(`/api/orderbook/${encodedSymbol}?depth=20`);
-            
+            const response = await fetch(
+                `/api/orderbook/${encodedSymbol}?depth=20`,
+            );
+
             if (!response.ok) {
                 throw new Error('Failed to fetch orderbook');
             }
@@ -45,23 +51,60 @@ export function useOrderbook(symbol: string) {
     }
 
     /**
+     * Debounced refresh function to prevent multiple rapid fetches
+     */
+    function debouncedRefresh() {
+        // Clear existing timer
+        if (refreshTimer) {
+            clearTimeout(refreshTimer);
+        }
+
+        // Set new timer
+        refreshTimer = setTimeout(() => {
+            console.log('Debounced orderbook refresh triggered');
+            fetchOrderbook();
+            refreshTimer = null;
+        }, DEBOUNCE_DELAY);
+    }
+
+    /**
      * Subscribe to real-time orderbook updates
      */
     function subscribeToUpdates() {
-        echo
-            .channel(`orderbook.${symbol}`)
-            .listen('.orderbook.updated', (event: any) => {
-                console.log('Orderbook updated:', event);
-                // Refresh orderbook when update received
-                fetchOrderbook();
-            });
+        if (!echo || typeof echo.channel !== 'function') {
+            console.warn(
+                'Echo not initialized yet, skipping orderbook subscriptions',
+            );
+            return;
+        }
+
+        echo.channel(`orderbook.${symbol}`).listen(
+            '.orderbook.updated',
+            (event: any) => {
+                console.log(
+                    'Orderbook update event received:',
+                    event.type,
+                    event,
+                );
+                // Use debounced refresh to prevent multiple rapid fetches
+                debouncedRefresh();
+            },
+        );
     }
 
     /**
      * Unsubscribe from updates
      */
     function unsubscribe() {
-        echo.leave(`orderbook.${symbol}`);
+        // Clear any pending refresh timer
+        if (refreshTimer) {
+            clearTimeout(refreshTimer);
+            refreshTimer = null;
+        }
+
+        if (echo && typeof echo.leave === 'function') {
+            echo.leave(`orderbook.${symbol}`);
+        }
     }
 
     return {

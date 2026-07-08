@@ -36,13 +36,19 @@ export function useOrders(userId: number) {
 
             const url = status ? `/api/orders?status=${status}` : '/api/orders';
             const response = await fetch(url, {
+                method: 'GET',
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
+                credentials: 'include',
             });
-            
+
             if (!response.ok) {
-                throw new Error('Failed to fetch orders');
+                throw new Error(
+                    `Failed to fetch orders: ${response.status} ${response.statusText}`,
+                );
             }
 
             const data = await response.json();
@@ -67,9 +73,16 @@ export function useOrders(userId: number) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN':
+                        (
+                            document.querySelector(
+                                'meta[name="csrf-token"]',
+                            ) as HTMLMetaElement
+                        )?.content || '',
                 },
+                credentials: 'include',
                 body: JSON.stringify(orderData),
             });
 
@@ -79,10 +92,10 @@ export function useOrders(userId: number) {
             }
 
             const data = await response.json();
-            
+
             // Refresh orders list
             await fetchOrders();
-            
+
             return data.data || data;
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Unknown error';
@@ -104,9 +117,17 @@ export function useOrders(userId: number) {
             const response = await fetch(`/api/orders/${orderId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN':
+                        (
+                            document.querySelector(
+                                'meta[name="csrf-token"]',
+                            ) as HTMLMetaElement
+                        )?.content || '',
                 },
+                credentials: 'include',
             });
 
             if (!response.ok) {
@@ -115,7 +136,7 @@ export function useOrders(userId: number) {
             }
 
             // Remove from local state
-            orders.value = orders.value.filter(o => o.id !== orderId);
+            orders.value = orders.value.filter((o) => o.id !== orderId);
 
             return true;
         } catch (err) {
@@ -131,27 +152,42 @@ export function useOrders(userId: number) {
      * Subscribe to user's order updates
      */
     function subscribeToOrderUpdates() {
-        echo
-            .private(`user.${userId}`)
-            .listen('.order.status.changed', (event: any) => {
+        if (!echo || typeof echo.private !== 'function') {
+            console.warn(
+                'Echo not initialized yet, skipping order subscriptions',
+            );
+            return;
+        }
+
+        echo.private(`user.${userId}`).listen(
+            '.order.status.changed',
+            (event: any) => {
                 console.log('Order status changed:', event.order);
-                
+
                 // Update order in list
-                const index = orders.value.findIndex(o => o.id === event.order.id);
+                const index = orders.value.findIndex(
+                    (o) => o.id === event.order.id,
+                );
                 if (index !== -1) {
-                    orders.value[index] = { ...orders.value[index], ...event.order };
+                    orders.value[index] = {
+                        ...orders.value[index],
+                        ...event.order,
+                    };
                 } else {
                     // Add new order if not exists
                     orders.value.unshift(event.order);
                 }
-            });
+            },
+        );
     }
 
     /**
      * Unsubscribe from updates
      */
     function unsubscribe() {
-        echo.leave(`user.${userId}`);
+        if (echo && typeof echo.leave === 'function') {
+            echo.leave(`user.${userId}`);
+        }
     }
 
     return {

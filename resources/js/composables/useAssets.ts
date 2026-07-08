@@ -24,23 +24,37 @@ export function useAssets(userId: number) {
             error.value = null;
 
             const response = await fetch('/api/assets', {
+                method: 'GET',
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
+                credentials: 'include', // Important: Include cookies for session auth
             });
-            
+
             if (!response.ok) {
-                throw new Error('Failed to fetch assets');
+                throw new Error(
+                    `Failed to fetch assets: ${response.status} ${response.statusText}`,
+                );
             }
 
             const data = await response.json();
+            console.log('Assets API Response:', data);
+
             const assetsList = data.data || data;
+            console.log('Assets List:', assetsList);
 
             // Convert array to object keyed by symbol
-            assets.value = assetsList.reduce((acc: Record<string, Asset>, asset: Asset) => {
-                acc[asset.symbol] = asset;
-                return acc;
-            }, {});
+            assets.value = assetsList.reduce(
+                (acc: Record<string, Asset>, asset: Asset) => {
+                    acc[asset.symbol] = asset;
+                    return acc;
+                },
+                {},
+            );
+
+            console.log('Assets Object:', assets.value);
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Unknown error';
             console.error('Error fetching assets:', err);
@@ -68,21 +82,31 @@ export function useAssets(userId: number) {
      * Subscribe to balance updates
      */
     function subscribeToBalanceUpdates() {
-        echo
-            .private(`user.${userId}`)
-            .listen('.balance.updated', (event: any) => {
+        if (!echo || typeof echo.private !== 'function') {
+            console.warn(
+                'Echo not initialized yet, skipping balance subscriptions',
+            );
+            return;
+        }
+
+        echo.private(`user.${userId}`).listen(
+            '.balance.updated',
+            (event: any) => {
                 console.log('Balance updated:', event.asset);
-                
+
                 // Update specific asset
                 assets.value[event.asset.symbol] = event.asset;
-            });
+            },
+        );
     }
 
     /**
      * Unsubscribe from updates
      */
     function unsubscribe() {
-        echo.leave(`user.${userId}`);
+        if (echo && typeof echo.leave === 'function') {
+            echo.leave(`user.${userId}`);
+        }
     }
 
     return {

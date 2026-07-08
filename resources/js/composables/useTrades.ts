@@ -25,8 +25,10 @@ export function useTrades(symbol: string) {
 
             // Encode symbol untuk handle slash di URL
             const encodedSymbol = encodeURIComponent(symbol);
-            const response = await fetch(`/api/trades/${encodedSymbol}?limit=50`);
-            
+            const response = await fetch(
+                `/api/trades/${encodedSymbol}?limit=50`,
+            );
+
             if (!response.ok) {
                 throw new Error('Failed to fetch trades');
             }
@@ -46,26 +48,36 @@ export function useTrades(symbol: string) {
      * Subscribe to real-time trade updates
      */
     function subscribeToTrades() {
-        echo
-            .channel(`trades.${symbol}`)
-            .listen('.trade.executed', (event: any) => {
+        if (!echo || typeof echo.channel !== 'function') {
+            console.warn(
+                'Echo not initialized yet, skipping trades subscriptions',
+            );
+            return;
+        }
+
+        echo.channel(`trades.${symbol}`).listen(
+            '.trade.executed',
+            (event: any) => {
                 console.log('New trade:', event.trade);
-                
+
                 // Add new trade to the top
                 trades.value.unshift(event.trade);
-                
+
                 // Keep only last 50 trades
                 if (trades.value.length > 50) {
                     trades.value.pop();
                 }
-            });
+            },
+        );
     }
 
     /**
      * Unsubscribe from trade updates
      */
     function unsubscribe() {
-        echo.leave(`trades.${symbol}`);
+        if (echo && typeof echo.leave === 'function') {
+            echo.leave(`trades.${symbol}`);
+        }
     }
 
     return {
