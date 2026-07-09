@@ -115,13 +115,10 @@ class OrderRepository
     public function getBids(string $symbol, int $depth): Collection
     {
         return Order::query()
-            ->select([
-                'price',
-                DB::raw('SUM(remaining_amount) as amount'),
-            ])
+            ->selectRaw('price, SUM(remaining_amount) as amount')
             ->where('symbol', $symbol)
             ->where('side', 'buy')
-            ->whereIn('status', ['open', 'partially_filled'])
+            ->open()
             ->groupBy('price')
             ->orderByDesc('price')
             ->limit($depth)
@@ -134,15 +131,12 @@ class OrderRepository
     public function getAsks(string $symbol, int $depth): Collection
     {
         return Order::query()
-            ->select([
-                'price',
-                DB::raw('SUM(remaining_amount) as amount'),
-            ])
+            ->selectRaw('price, SUM(remaining_amount) as amount')
             ->where('symbol', $symbol)
             ->where('side', 'sell')
-            ->whereIn('status', ['open', 'partially_filled'])
+            ->open()
             ->groupBy('price')
-            ->orderBy('price', 'asc')
+            ->orderBy('price')
             ->limit($depth)
             ->get();
     }
