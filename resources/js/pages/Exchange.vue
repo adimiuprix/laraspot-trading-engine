@@ -196,7 +196,7 @@ onUnmounted(() => {
         <div class="flex h-[calc(100vh-3.5rem)]">
             <!-- Left Column: Chart & Recent Trades -->
             <div class="flex flex-1 flex-col border-r border-gray-700">
-                <TradingChart />
+                <TradingChart :symbol="symbol" interval="1m" />
                 <RecentTrades :trades="recentTrades" :loading="tradesLoading" />
             </div>
 

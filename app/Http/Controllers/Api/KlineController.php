@@ -1,0 +1,94 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Services\KlineService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+
+class KlineController extends Controller
+{
+    public function __construct(
+        private KlineService $klineService
+    ) {}
+
+    /**
+     * Get kline/candlestick data for a symbol.
+     *
+     * GET /api/klines/{symbol}?interval=1m&startTime=1234567890&endTime=1234567999&limit=500
+     *
+     * Query Parameters:
+     * - interval (required): 1m (currently only 1-minute interval is supported)
+     * - startTime (optional): Start time in Unix timestamp (seconds)
+     * - endTime (optional): End time in Unix timestamp (seconds)
+     * - limit (optional): Number of klines to return (default: 500, max: 1000)
+     *
+     * Response Format (Binance-compatible):
+     * [
+     *   [
+     *     1499040000,         // Open time (seconds)
+     *     "0.01634790",       // Open
+     *     "0.80000000",       // High
+     *     "0.01575800",       // Low
+     *     "0.01577100",       // Close
+     *     "148976.11427815",  // Volume
+     *     1499040059,         // Close time (seconds)
+     *     "2434.19055334",    // Quote asset volume
+     *     308,                // Number of trades
+     *     "0.00000000",       // Taker buy base asset volume
+     *     "0.00000000",       // Taker buy quote asset volume
+     *     "0"                 // Ignore
+     *   ]
+     * ]
+     */
+    public function index(Request $request, string $symbol)
+    {
+        // Validate query parameters
+        $validator = Validator::make($request->all(), [
+            'interval' => ['required', 'string', 'in:1m'], // Only 1m for now
+            'startTime' => ['nullable', 'integer', 'min:0'],
+            'endTime' => ['nullable', 'integer', 'min:0'],
+            'limit' => ['nullable', 'integer', 'min:1', 'max:1000'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'code' => -1100,
+                'msg' => $validator->errors()->first(),
+            ], 400);
+        }
+
+        $interval = $request->query('interval');
+        $startTime = $request->query('startTime');
+        $endTime = $request->query('endTime');
+        $limit = $request->query('limit', 500);
+
+        try {
+            $klines = $this->klineService->getKlines(
+                symbol: $symbol,
+                interval: $interval,
+                startTime: $startTime,
+                endTime: $endTime,
+                limit: (int) $limit
+            );
+
+            // Convert to Binance-compatible format
+            $data = $klines->map(function ($kline) {
+                return $kline->toApiFormat();
+            })->values();
+
+            return response()->json($data);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'code' => -1121,
+                'msg' => $e->getMessage(),
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'code' => -1000,
+                'msg' => 'An unknown error occurred',
+            ], 500);
+        }
+    }
+}

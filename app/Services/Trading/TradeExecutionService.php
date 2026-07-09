@@ -44,7 +44,7 @@ class TradeExecutionService
             'trade_time' => Carbon::now()->timestamp,
             'price' => $tradePrice,
             'amount' => $fillAmount, // Partial amount
-            'quote_amount' => $tradePrice * $fillAmount,
+            'quote_amount' => bcmul($tradePrice, $fillAmount, 8), // Use bcmul for precision
             'commission' => $commission,
             'maker_side' => $buyOrder->created_at < $sellOrder->created_at ? 'buy' : 'sell', // Determine who market maker
         ]);

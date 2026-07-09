@@ -54,4 +54,30 @@ return [
         // Minimum order value (in quote currency)
         'min_order_value' => env('MIN_ORDER_VALUE', '10'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Kline/Candlestick Intervals
+    |--------------------------------------------------------------------------
+    |
+    | Supported intervals for OHLCV (candlestick) data generation.
+    | Key = interval name, Value = seconds
+    |
+    | Note: Currently only 1-minute interval is enabled.
+    | Other intervals can be added later: 3m, 5m, 15m, 30m, 1h, 4h, 1d, etc.
+    |
+    */
+
+    'kline_intervals' => [
+        '1m' => 60,  // 1 minute only
+        
+        // Future intervals (uncomment when ready):
+        // '3m' => 180,
+        // '5m' => 300,
+        // '15m' => 900,
+        // '30m' => 1800,
+        // '1h' => 3600,
+        // '4h' => 14400,
+        // '1d' => 86400,
+    ],
 ];

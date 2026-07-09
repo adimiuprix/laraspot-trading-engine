@@ -37,6 +37,7 @@ class Trade extends Model
         return [
             'price' => 'decimal:8',
             'amount' => 'decimal:8',
+            'quote_amount' => 'decimal:8',
             'commission' => 'decimal:8',
         ];
     }

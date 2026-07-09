@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AssetController;
+use App\Http\Controllers\Api\KlineController;
 use App\Http\Controllers\Api\OrderBookController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\TradeController;
@@ -34,3 +35,4 @@ Route::middleware('auth:web')->group(function () {
 // Public endpoints (no auth required)
 Route::get('/orderbook/{symbol}', [OrderBookController::class, 'show'])->where('symbol', '.*');
 Route::get('/trades/{symbol}', [TradeController::class, 'index'])->where('symbol', '.*');
+Route::get('/klines/{symbol}', [KlineController::class, 'index'])->where('symbol', '.*');

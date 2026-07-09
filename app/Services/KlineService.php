@@ -1,0 +1,253 @@
+<?php
+
+namespace App\Services;
+
+use App\Events\KlineUpdated;
+use App\Models\Kline;
+use App\Models\Trade;
+use App\Repositories\KlineRepository;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+class KlineService
+{
+    public function __construct(
+        private KlineRepository $klineRepository
+    ) {}
+
+    /**
+     * Update or create kline from trade data.
+     * This is called for EVERY executed trade.
+     *
+     * Algorithm from OHLCV_Real_Time_Guide.md:
+     * 1. Calculate bucket time: floor(timestamp / interval) * interval
+     * 2. Find existing kline by bucket
+     * 3. If not exists: Create new kline (open=high=low=close=price, volume=amount)
+     * 4. If exists: Update high/low/close/volume
+     */
+    public function updateOrCreateFromTrade(
+        string $symbol,
+        string $interval,
+        int $timestamp,
+        string $price,
+        string $amount
+    ): Kline {
+        // Get interval in seconds
+        $intervalSeconds = $this->getIntervalSeconds($interval);
+
+        // Calculate bucket time: floor(timestamp / interval) * interval
+        $openTime = $this->calculateBucketTime($timestamp, $intervalSeconds);
+        $closeTime = $openTime + $intervalSeconds - 1;
+
+        // Calculate quote volume (price × amount)
+        $quoteAmount = bcmul($price, $amount, 8);
+
+        // Try to find existing kline
+        $kline = $this->klineRepository->findByBucket($symbol, $interval, $openTime);
+
+        if (! $kline) {
+            // Create new kline (first trade in this interval)
+            $kline = $this->klineRepository->create([
+                'symbol' => $symbol,
+                'interval' => $interval,
+                'open_time' => $openTime,
+                'close_time' => $closeTime,
+                'open' => $price,        // First trade price
+                'high' => $price,        // Initialize with first price
+                'low' => $price,         // Initialize with first price
+                'close' => $price,       // Latest trade price
+                'volume' => $amount,     // Base asset volume
+                'quote_volume' => $quoteAmount, // Quote asset volume
+                'trades_count' => 1,
+                'is_closed' => false,
+            ]);
+
+            Log::info("Created new kline", [
+                'symbol' => $symbol,
+                'interval' => $interval,
+                'open_time' => $openTime,
+                'price' => $price,
+            ]);
+        } else {
+            // Update existing kline
+            $kline->updateWithTrade($price, $amount, $quoteAmount);
+
+            Log::debug("Updated kline", [
+                'symbol' => $symbol,
+                'interval' => $interval,
+                'open_time' => $openTime,
+                'price' => $price,
+                'trades_count' => $kline->trades_count,
+            ]);
+        }
+
+        // Broadcast kline update via WebSocket (optional for real-time charts)
+        event(new KlineUpdated($kline));
+
+        return $kline;
+    }
+
+    /**
+     * Update klines for all configured intervals from a single trade.
+     */
+    public function updateAllIntervalsFromTrade(Trade $trade): void
+    {
+        $symbol = $trade->buyerOrder->symbol;
+        $price = $trade->price;
+        $amount = $trade->amount;
+        $timestamp = $trade->created_at->timestamp;
+
+        $intervals = config('trading.kline_intervals', []);
+
+        foreach ($intervals as $intervalName => $intervalSeconds) {
+            try {
+                $this->updateOrCreateFromTrade(
+                    symbol: $symbol,
+                    interval: $intervalName,
+                    timestamp: $timestamp,
+                    price: $price,
+                    amount: $amount
+                );
+            } catch (\Exception $e) {
+                Log::error("Failed to update kline for interval {$intervalName}", [
+                    'symbol' => $symbol,
+                    'error' => $e->getMessage(),
+                    'trade_id' => $trade->id,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Calculate bucket time using formula: floor(timestamp / interval) * interval.
+     *
+     * Example:
+     *   timestamp = 1752043517
+     *   interval = 60
+     *   bucket = floor(1752043517 / 60) * 60 = 1752043500
+     */
+    private function calculateBucketTime(int $timestamp, int $intervalSeconds): int
+    {
+        return (int) floor($timestamp / $intervalSeconds) * $intervalSeconds;
+    }
+
+    /**
+     * Get interval in seconds from interval name.
+     */
+    private function getIntervalSeconds(string $interval): int
+    {
+        $intervals = config('trading.kline_intervals', []);
+
+        if (! isset($intervals[$interval])) {
+            throw new \InvalidArgumentException("Invalid interval: {$interval}");
+        }
+
+        return $intervals[$interval];
+    }
+
+    /**
+     * Close klines that have passed their close_time.
+     * This should be run periodically (e.g., via scheduled command).
+     */
+    public function closeExpiredKlines(): int
+    {
+        $now = now()->timestamp;
+        $unclosedKlines = $this->klineRepository->getUnclosedKlinesBefore($now);
+
+        foreach ($unclosedKlines as $kline) {
+            $this->klineRepository->markAsClosed($kline);
+
+            Log::info("Closed kline", [
+                'symbol' => $kline->symbol,
+                'interval' => $kline->interval,
+                'open_time' => $kline->open_time,
+            ]);
+        }
+
+        return $unclosedKlines->count();
+    }
+
+    /**
+     * Get klines for API response.
+     */
+    public function getKlines(
+        string $symbol,
+        string $interval,
+        ?int $startTime = null,
+        ?int $endTime = null,
+        int $limit = 500
+    ) {
+        // Validate interval
+        $this->getIntervalSeconds($interval);
+
+        if (! $startTime) {
+            // Default: last 500 klines
+            return $this->klineRepository->getRecentKlines($symbol, $interval, $limit);
+        }
+
+        if (! $endTime) {
+            $endTime = now()->timestamp;
+        }
+
+        return $this->klineRepository->getKlines($symbol, $interval, $startTime, $endTime, $limit);
+    }
+
+    /**
+     * Fill gaps in klines (if no trades occurred in an interval).
+     *
+     * Algorithm from guide:
+     * If no trade in interval:
+     *   open = close of previous candle
+     *   high = open
+     *   low = open
+     *   close = open
+     *   volume = 0
+     */
+    public function fillGaps(string $symbol, string $interval, int $startTime, int $endTime): int
+    {
+        $intervalSeconds = $this->getIntervalSeconds($interval);
+        $filled = 0;
+
+        $currentBucket = $this->calculateBucketTime($startTime, $intervalSeconds);
+
+        while ($currentBucket <= $endTime) {
+            $kline = $this->klineRepository->findByBucket($symbol, $interval, $currentBucket);
+
+            if (! $kline) {
+                // No kline exists for this bucket, get previous kline's close
+                $previousBucket = $currentBucket - $intervalSeconds;
+                $previousKline = $this->klineRepository->findByBucket($symbol, $interval, $previousBucket);
+
+                $price = $previousKline ? $previousKline->close : '0';
+
+                // Create empty kline with all OHLC = previous close
+                $this->klineRepository->create([
+                    'symbol' => $symbol,
+                    'interval' => $interval,
+                    'open_time' => $currentBucket,
+                    'close_time' => $currentBucket + $intervalSeconds - 1,
+                    'open' => $price,
+                    'high' => $price,
+                    'low' => $price,
+                    'close' => $price,
+                    'volume' => '0',
+                    'quote_volume' => '0',
+                    'trades_count' => 0,
+                    'is_closed' => true, // Mark as closed since it's historical
+                ]);
+
+                $filled++;
+
+                Log::debug("Filled gap for kline", [
+                    'symbol' => $symbol,
+                    'interval' => $interval,
+                    'open_time' => $currentBucket,
+                ]);
+            }
+
+            $currentBucket += $intervalSeconds;
+        }
+
+        return $filled;
+    }
+}
