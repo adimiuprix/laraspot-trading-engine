@@ -3,7 +3,7 @@
 namespace App\Services\Trading;
 
 use App\DTOs\CancelOrderDTO;
-use App\DTOs\PlaceOrderDTO;
+use App\DTOs\PlaceLimitOrderDTO;
 use App\DTOs\PlaceMarketOrderDTO;
 use App\Events\BalanceUpdated;
 use App\Events\OrderCancelled;
@@ -32,7 +32,7 @@ class OrderService
     /**
      * Place a new order.
      */
-    public function placeOrder(PlaceOrderDTO $dto): Order
+    public function placeOrder(PlaceLimitOrderDTO $dto): Order
     {
         return DB::transaction(function () use ($dto) {
             // Check if user has sufficient balance

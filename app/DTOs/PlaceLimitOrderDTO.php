@@ -5,7 +5,7 @@ namespace App\DTOs;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\User;
 
-class PlaceOrderDTO
+class PlaceLimitOrderDTO
 {
     public function __construct(
         public readonly User $user,

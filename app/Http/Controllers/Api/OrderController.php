@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\DTOs\CancelOrderDTO;
-use App\DTOs\PlaceOrderDTO;
+use App\DTOs\PlaceLimitOrderDTO;
 use App\DTOs\PlaceMarketOrderDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PlaceOrderRequest;
@@ -39,7 +39,7 @@ class OrderController extends Controller
             $dto = PlaceMarketOrderDTO::fromRequest($request);
             $order = $this->orderService->placeMarketOrder($dto);
         } else {
-            $dto = PlaceOrderDTO::fromRequest($request);
+            $dto = PlaceLimitOrderDTO::fromRequest($request);
             $order = $this->orderService->placeOrder($dto);
         }
 
