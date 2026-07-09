@@ -43,11 +43,12 @@ class TradeRepository
 
     /**
      * Get the last trade price for a symbol.
+     * Order by ID DESC to handle multiple trades with same timestamp.
      */
     public function getLastPrice(string $symbol): ?string
     {
         $trade = Trade::whereHas('buyerOrder', fn ($q) => $q->where('symbol', $symbol))
-            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc') // Use ID instead of created_at for uniqueness
             ->first();
 
         return $trade?->price;
