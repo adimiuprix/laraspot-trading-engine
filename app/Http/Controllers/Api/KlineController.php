@@ -44,50 +44,40 @@ class KlineController extends Controller
      */
     public function index(Request $request, string $symbol)
     {
-        // Validate query parameters
-        $validator = Validator::make($request->all(), [
-            'interval' => ['required', 'string', 'in:1m'], // Only 1m for now
-            'startTime' => ['nullable', 'integer', 'min:0'],
-            'endTime' => ['nullable', 'integer', 'min:0'],
-            'limit' => ['nullable', 'integer', 'min:1', 'max:1000'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'interval'  => ['required', 'string', 'in:1m'],
+                'startTime' => ['nullable', 'integer', 'min:0'],
+                'endTime'   => ['nullable', 'integer', 'min:0'],
+                'limit'     => ['nullable', 'integer', 'min:1', 'max:1000'],
+            ]);
 
-        if ($validator->fails()) {
+            return response()->json(
+                $this->klineService
+                    ->getKlines(
+                        symbol: $symbol,
+                        interval: $validated['interval'],
+                        startTime: $validated['startTime'] ?? null,
+                        endTime: $validated['endTime'] ?? null,
+                        limit: $validated['limit'] ?? 500,
+                    )
+                    ->map(fn ($kline) => $kline->toApiFormat())
+                    ->values()
+            );
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'code' => -1100,
-                'msg' => $validator->errors()->first(),
+                'msg'  => $e->validator->errors()->first(),
             ], 400);
-        }
-
-        $interval = $request->query('interval');
-        $startTime = $request->query('startTime');
-        $endTime = $request->query('endTime');
-        $limit = $request->query('limit', 500);
-
-        try {
-            $klines = $this->klineService->getKlines(
-                symbol: $symbol,
-                interval: $interval,
-                startTime: $startTime,
-                endTime: $endTime,
-                limit: (int) $limit
-            );
-
-            // Convert to Binance-compatible format
-            $data = $klines->map(function ($kline) {
-                return $kline->toApiFormat();
-            })->values();
-
-            return response()->json($data);
         } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'code' => -1121,
-                'msg' => $e->getMessage(),
+                'msg'  => $e->getMessage(),
             ], 400);
-        } catch (\Exception $e) {
+        } catch (\Throwable) {
             return response()->json([
                 'code' => -1000,
-                'msg' => 'An unknown error occurred',
+                'msg'  => 'An unknown error occurred',
             ], 500);
         }
     }
