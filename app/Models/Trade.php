@@ -12,6 +12,8 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $buyer_order_id
  * @property int $seller_order_id
+ * @property int $buyer_id
+ * @property int $seller_id
  * @property string $price
  * @property string $amount
  * @property string $commission
@@ -19,8 +21,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Order $buyerOrder
  * @property-read Order $sellerOrder
+ * @property-read User $buyer
+ * @property-read User $seller
  */
-#[Fillable(['buyer_order_id', 'seller_order_id', 'price', 'amount', 'commission'])]
+#[Fillable(['buyer_order_id', 'seller_order_id', 'buyer_id', 'seller_id', 'price', 'amount', 'commission'])]
 class Trade extends Model
 {
     /**
@@ -51,6 +55,22 @@ class Trade extends Model
     public function sellerOrder(): BelongsTo
     {
         return $this->belongsTo(Order::class, 'seller_order_id');
+    }
+
+    /**
+     * Get the buyer user.
+     */
+    public function buyer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'buyer_id');
+    }
+
+    /**
+     * Get the seller user.
+     */
+    public function seller(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'seller_id');
     }
 
     /**

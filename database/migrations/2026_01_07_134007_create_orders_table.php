@@ -16,9 +16,12 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('symbol', 10);
             $table->enum('side', ['buy', 'sell']);
+            $table->enum('type', ['limit', 'market'])->default('limit');
             $table->decimal('price', 20, 8);
             $table->decimal('amount', 20, 8);
-            $table->enum('status', ['open', 'filled', 'cancelled'])->default('open')->index();
+            $table->decimal('filled_amount', 20, 8)->default(0);
+            $table->decimal('remaining_amount', 20, 8);
+            $table->enum('status', ['open', 'partially_filled', 'filled', 'cancelled'])->default('open')->index();
             $table->timestamps();
 
             // Index to optimize queries for open orders by user and symbol

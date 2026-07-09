@@ -38,6 +38,8 @@ class TradeExecutionService
         $trade = $this->tradeRepository->create([
             'buyer_order_id' => $buyOrder->id,
             'seller_order_id' => $sellOrder->id,
+            'buyer_id' => $buyOrder->user_id,
+            'seller_id' => $sellOrder->user_id,
             'price' => $tradePrice,
             'amount' => $fillAmount, // Partial amount
             'commission' => $commission,
