@@ -138,22 +138,23 @@ class Kline extends Model
 
     /**
      * Get formatted data for API response (Binance format).
+     * All values returned as strings for consistency.
      */
     public function toApiFormat(): array
     {
         return [
-            $this->open_time,
-            $this->open,
-            $this->high,
-            $this->low,
-            $this->close,
-            $this->volume,
-            $this->close_time,
-            $this->quote_volume,
-            $this->trades_count,
-            '0', // Taker buy base asset volume (not implemented)
-            '0', // Taker buy quote asset volume (not implemented)
-            '0', // Ignore
+            (string) $this->open_time,      // Convert to string
+            $this->open,                     // Already string from decimal cast
+            $this->high,                     // Already string from decimal cast
+            $this->low,                      // Already string from decimal cast
+            $this->close,                    // Already string from decimal cast
+            $this->volume,                   // Already string from decimal cast
+            (string) $this->close_time,      // Convert to string
+            $this->quote_volume,             // Already string from decimal cast
+            (string) $this->trades_count,    // Convert to string
+            '0',                             // Taker buy base asset volume (not implemented)
+            '0',                             // Taker buy quote asset volume (not implemented)
+            '0',                             // Ignore
         ];
     }
 }

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\KlineService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class KlineController extends Controller
 {

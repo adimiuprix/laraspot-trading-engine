@@ -54,14 +54,15 @@ export function useKlines(symbol: string, interval: string = '1m') {
             const data = await response.json();
 
             // Convert Binance-compatible API format to chart format
-            // API returns: [[timestamp, open, high, low, close, volume, ...], ...]
-            klines.value = data.map((k: any[]) => ({
-                time: k[0], // Open time (seconds)
-                open: parseFloat(k[1]),
-                high: parseFloat(k[2]),
-                low: parseFloat(k[3]),
-                close: parseFloat(k[4]),
-                volume: parseFloat(k[5]),
+            // API returns: [["timestamp", "open", "high", "low", "close", "volume", ...], ...]
+            // All values are strings, we need to parse them for the chart
+            klines.value = data.map((k: string[]) => ({
+                time: parseInt(k[0], 10),       // Parse timestamp string to number
+                open: parseFloat(k[1]),         // Parse price string to number
+                high: parseFloat(k[2]),         // Parse price string to number
+                low: parseFloat(k[3]),          // Parse price string to number
+                close: parseFloat(k[4]),        // Parse price string to number
+                volume: parseFloat(k[5]),       // Parse volume string to number
             }));
 
             console.log(`📊 Loaded ${klines.value.length} klines for ${symbol}`);
