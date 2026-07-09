@@ -19,6 +19,7 @@ class OrderResource extends JsonResource
             'user_id' => $this->user_id,
             'symbol' => $this->symbol,
             'side' => $this->side,
+            'type' => $this->type ?? 'limit',
             'price' => $this->price,
             'amount' => $this->amount,
             'filled_amount' => $this->filled_amount,

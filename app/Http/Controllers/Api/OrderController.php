@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\DTOs\CancelOrderDTO;
 use App\DTOs\PlaceOrderDTO;
+use App\DTOs\PlaceMarketOrderDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Http\Resources\OrderResource;
@@ -32,8 +33,15 @@ class OrderController extends Controller
      */
     public function store(PlaceOrderRequest $request)
     {
-        $dto = PlaceOrderDTO::fromRequest($request);
-        $order = $this->orderService->placeOrder($dto);
+        $orderType = $request->validated('type');
+
+        if ($orderType === 'market') {
+            $dto = PlaceMarketOrderDTO::fromRequest($request);
+            $order = $this->orderService->placeMarketOrder($dto);
+        } else {
+            $dto = PlaceOrderDTO::fromRequest($request);
+            $order = $this->orderService->placeOrder($dto);
+        }
 
         return OrderResource::make($order);
     }

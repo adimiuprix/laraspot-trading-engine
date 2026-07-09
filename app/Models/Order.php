@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property string $symbol
  * @property string $side (buy/sell)
+ * @property string $type (limit/market)
  * @property string $price
  * @property string $amount
  * @property string $filled_amount
@@ -25,7 +26,7 @@ use Illuminate\Support\Carbon;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Trade> $buyTrades
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Trade> $sellTrades
  */
-#[Fillable(['user_id', 'symbol', 'side', 'price', 'amount', 'filled_amount', 'remaining_amount', 'status'])]
+#[Fillable(['user_id', 'symbol', 'side', 'type', 'price', 'amount', 'filled_amount', 'remaining_amount', 'status'])]
 class Order extends Model
 {
     /**
@@ -101,7 +102,7 @@ class Order extends Model
         $oppositeSide = $side === 'buy' ? 'sell' : 'buy';
 
         $query->where('side', $oppositeSide)
-            ->where('status', 'open')
+            ->whereIn('status', ['open', 'partially_filled'])
             ->where(function ($q) use ($side, $price) {
                 if ($side === 'buy') {
                     // Buy order can match sell orders at or below the buy price
@@ -115,10 +116,13 @@ class Order extends Model
 
     /**
      * Check if order can be cancelled.
+     * Orders can be cancelled if they are open or partially filled.
+     * Filled orders cannot be cancelled (already executed).
+     * Cancelled orders cannot be cancelled again.
      */
     public function canBeCancelled(): bool
     {
-        return $this->status === 'open';
+        return in_array($this->status, ['open', 'partially_filled']);
     }
 
     /**
@@ -135,6 +139,22 @@ class Order extends Model
     public function isSellOrder(): bool
     {
         return $this->side === 'sell';
+    }
+
+    /**
+     * Check if order is a limit order.
+     */
+    public function isLimitOrder(): bool
+    {
+        return $this->type === 'limit';
+    }
+
+    /**
+     * Check if order is a market order.
+     */
+    public function isMarketOrder(): bool
+    {
+        return $this->type === 'market';
     }
 
     /**

@@ -50,6 +50,7 @@ class OrderStatusChanged implements ShouldBroadcast
                 'id' => $this->order->id,
                 'symbol' => $this->order->symbol,
                 'side' => $this->order->side,
+                'type' => $this->order->type ?? 'limit',
                 'price' => $this->order->price,
                 'amount' => $this->order->amount,
                 'filled_amount' => $this->order->filled_amount,

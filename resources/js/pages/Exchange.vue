@@ -127,6 +127,7 @@ async function placeOrder() {
         await submitOrder({
             symbol,
             side: activeOrderTab.value,
+            type: orderType.value,
             price:
                 orderType.value === 'market'
                     ? currentPrice.value

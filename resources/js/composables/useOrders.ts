@@ -5,6 +5,7 @@ interface Order {
     id: number;
     symbol: string;
     side: 'buy' | 'sell';
+    type?: 'limit' | 'market';
     price: string;
     amount: string;
     filled_amount?: string;
@@ -17,6 +18,7 @@ interface Order {
 interface PlaceOrderData {
     symbol: string;
     side: 'buy' | 'sell';
+    type?: 'limit' | 'market';
     price: string;
     amount: string;
 }

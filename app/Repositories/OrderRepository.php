@@ -36,12 +36,13 @@ class OrderRepository
 
     /**
      * Get open orders for a specific symbol and side.
+     * This includes both 'open' and 'partially_filled' orders.
      */
     public function getOpenOrders(string $symbol, string $side): Collection
     {
         return Order::where('symbol', $symbol)
             ->where('side', $side)
-            ->where('status', 'open')
+            ->whereIn('status', ['open', 'partially_filled'])
             ->orderBy('price', $side === 'buy' ? 'desc' : 'asc')
             ->orderBy('created_at', 'asc')
             ->get();
@@ -132,6 +133,35 @@ class OrderRepository
             ->orderBy('price', 'asc')
             ->orderBy('created_at', 'asc')
             ->limit($depth)
+            ->get();
+    }
+
+    /**
+     * Get best available orders for market order execution.
+     * Returns orders sorted by best price with time priority.
+     */
+    public function getBestOrdersForMarketExecution(
+        string $symbol,
+        string $side,
+        int $limit = 50
+    ): Collection {
+        $oppositeSide = $side === 'buy' ? 'sell' : 'buy';
+
+        $query = Order::where('symbol', $symbol)
+            ->where('side', $oppositeSide)
+            ->whereIn('status', ['open', 'partially_filled'])
+            ->where('remaining_amount', '>', 0);
+
+        if ($side === 'buy') {
+            // Buy market order: get cheapest sells first
+            $query->orderBy('price', 'asc');
+        } else {
+            // Sell market order: get highest buys first
+            $query->orderBy('price', 'desc');
+        }
+
+        return $query->orderBy('created_at', 'asc')
+            ->limit($limit)
             ->get();
     }
 }
