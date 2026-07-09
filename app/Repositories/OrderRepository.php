@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Order;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 class OrderRepository
 {
@@ -42,7 +43,7 @@ class OrderRepository
     {
         return Order::where('symbol', $symbol)
             ->where('side', $side)
-            ->whereIn('status', ['open', 'partially_filled'])
+            ->open()
             ->orderBy('price', $side === 'buy' ? 'desc' : 'asc')
             ->orderBy('created_at', 'asc')
             ->get();
@@ -113,11 +114,16 @@ class OrderRepository
      */
     public function getBids(string $symbol, int $depth): Collection
     {
-        return Order::where('symbol', $symbol)
+        return Order::query()
+            ->select([
+                'price',
+                DB::raw('SUM(remaining_amount) as amount'),
+            ])
+            ->where('symbol', $symbol)
             ->where('side', 'buy')
             ->whereIn('status', ['open', 'partially_filled'])
-            ->orderBy('price', 'desc')
-            ->orderBy('created_at', 'asc')
+            ->groupBy('price')
+            ->orderByDesc('price')
             ->limit($depth)
             ->get();
     }
@@ -127,11 +133,16 @@ class OrderRepository
      */
     public function getAsks(string $symbol, int $depth): Collection
     {
-        return Order::where('symbol', $symbol)
+        return Order::query()
+            ->select([
+                'price',
+                DB::raw('SUM(remaining_amount) as amount'),
+            ])
+            ->where('symbol', $symbol)
             ->where('side', 'sell')
             ->whereIn('status', ['open', 'partially_filled'])
+            ->groupBy('price')
             ->orderBy('price', 'asc')
-            ->orderBy('created_at', 'asc')
             ->limit($depth)
             ->get();
     }

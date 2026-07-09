@@ -73,7 +73,7 @@ class Order extends Model
      */
     public function scopeOpen(Builder $query): void
     {
-        $query->where('status', 'open');
+        $query->whereIn('status', ['open', 'partially_filled']);
     }
 
     /**
