@@ -55,8 +55,8 @@ class TradeExecuted implements ShouldBroadcast
                 'price' => $this->trade->price,
                 'amount' => $this->trade->amount,
                 'total' => $this->trade->total_value,
-                'side' => 'buy', // From the perspective of the taker
-                'time' => $this->trade->created_at->toIso8601String(),
+                'side' => $this->trade->maker_side, // From the perspective of the taker
+                'trade_time' => $this->trade->created_at->toIso8601String(),
             ],
         ];
     }

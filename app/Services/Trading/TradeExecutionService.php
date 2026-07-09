@@ -10,6 +10,7 @@ use App\Models\Trade;
 use App\Repositories\TradeRepository;
 use App\Services\AssetService;
 use App\Services\Trading\Concerns\ParsesSymbol;
+use Carbon\Carbon;
 
 class TradeExecutionService
 {
@@ -40,9 +41,12 @@ class TradeExecutionService
             'seller_order_id' => $sellOrder->id,
             'buyer_id' => $buyOrder->user_id,
             'seller_id' => $sellOrder->user_id,
+            'trade_time' => Carbon::now()->timestamp,
             'price' => $tradePrice,
             'amount' => $fillAmount, // Partial amount
+            'quote_amount' => $tradePrice * $fillAmount,
             'commission' => $commission,
+            'maker_side' => $buyOrder->created_at < $sellOrder->created_at ? 'buy' : 'sell', // Determine who market maker
         ]);
 
         // Update balances for this partial fill

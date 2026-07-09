@@ -24,7 +24,7 @@ use Illuminate\Support\Carbon;
  * @property-read User $buyer
  * @property-read User $seller
  */
-#[Fillable(['buyer_order_id', 'seller_order_id', 'buyer_id', 'seller_id', 'price', 'amount', 'commission'])]
+#[Fillable(['buyer_order_id', 'seller_order_id', 'buyer_id', 'seller_id', 'trade_time', 'price', 'amount', 'quote_amount', 'commission', 'maker_side'])]
 class Trade extends Model
 {
     /**
