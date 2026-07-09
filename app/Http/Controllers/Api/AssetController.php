@@ -30,11 +30,7 @@ class AssetController extends Controller
     {
         $asset = $this->assetService->getUserAsset($request->user(), $symbol);
 
-        if (! $asset) {
-            return response()->json([
-                'message' => 'Asset not found',
-            ], 404);
-        }
+        abort_if(! $asset, 404, 'Asset not found');
 
         return AssetResource::make($asset);
     }
