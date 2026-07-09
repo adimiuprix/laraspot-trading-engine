@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('buyer_order_id')->constrained('orders');
             $table->foreignId('seller_order_id')->constrained('orders');
+            $table->foreignId('buyer_id')->constrained('users');
+            $table->foreignId('seller_id')->constrained('users');
             $table->decimal('price', 20, 8);
             $table->decimal('amount', 20, 8);
             $table->decimal('commission', 20, 8);
