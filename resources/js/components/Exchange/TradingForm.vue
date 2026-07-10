@@ -3,7 +3,7 @@ import { computed } from 'vue';
 
 interface OrderForm {
     price: string;
-    amount: string;
+    quantity: string;
     total: string;
 }
 
@@ -23,7 +23,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
     'update-price': [value: string];
-    'update-amount': [value: string];
+    'update-quantity': [value: string];
     'set-order-tab': [tab: 'buy' | 'sell'];
     'set-order-type': [type: 'limit' | 'market'];
     'validate-input': [event: Event];
@@ -251,18 +251,18 @@ const assetSymbol = computed(() =>
                         </div>
                     </div>
 
-                    <!-- Amount Input -->
+                    <!-- quantity Input -->
                     <div>
                         <label
                             class="mb-2 block text-xs font-medium text-gray-300"
-                            >Amount</label
+                            >quantity</label
                         >
                         <div class="relative">
                             <input
-                                :value="orderForm.amount"
+                                :value="orderForm.quantity"
                                 @input="
                                     emit(
-                                        'update-amount',
+                                        'update-quantity',
                                         ($event.target as HTMLInputElement)
                                             .value,
                                     );
@@ -271,7 +271,7 @@ const assetSymbol = computed(() =>
                                 @blur="emit('calculate-total')"
                                 type="text"
                                 inputmode="decimal"
-                                data-field="amount"
+                                data-field="quantity"
                                 placeholder="0.00"
                                 class="w-full rounded-lg border border-gray-700 bg-gray-900 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-transparent focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                             />

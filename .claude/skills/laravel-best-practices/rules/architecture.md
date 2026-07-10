@@ -65,7 +65,7 @@ Correct (interface dependency):
 ```php
 interface PaymentGateway
 {
-    public function charge(int $amount, string $customerId): PaymentResult;
+    public function charge(int $quantity, string $customerId): PaymentResult;
 }
 
 class OrderService

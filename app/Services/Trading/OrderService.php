@@ -37,14 +37,14 @@ class OrderService
         return DB::transaction(function () use ($dto) {
             // Check if user has sufficient balance
             $assetToLock = $dto->getAssetToLock();
-            $amountToLock = $dto->getAmountToLock();
+            $quantityToLock = $dto->getquantityToLock();
 
-            if (! $this->assetService->hasSufficientBalance($dto->user, $assetToLock, $amountToLock)) {
+            if (! $this->assetService->hasSufficientBalance($dto->user, $assetToLock, $quantityToLock)) {
                 throw new Exception('Insufficient balance');
             }
 
-            // Lock the required amount
-            $this->assetService->lockAmount($dto->user, $assetToLock, $amountToLock);
+            // Lock the required quantity
+            $this->assetService->lockquantity($dto->user, $assetToLock, $quantityToLock);
 
             // Broadcast balance update
             $asset = $dto->user->getAsset($assetToLock);
@@ -57,9 +57,9 @@ class OrderService
                 'side' => $dto->side,
                 'type' => 'limit',
                 'price' => $dto->price,
-                'amount' => $dto->amount,
-                'filled_amount' => '0',
-                'remaining_amount' => $dto->amount,
+                'quantity' => $dto->quantity,
+                'filled_quantity' => '0',
+                'remaining_quantity' => $dto->quantity,
                 'status' => 'open',
             ]);
 
@@ -99,18 +99,18 @@ class OrderService
             // Extract base and quote from symbol
             [$base, $quote] = $this->parseSymbol($order->symbol);
 
-            // Unlock the locked amount for REMAINING order only
+            // Unlock the locked quantity for REMAINING order only
             if ($order->isBuyOrder()) {
-                // Unlock USDT (quote) for remaining amount
-                $remainingTotal = bcmul($order->price, $order->remaining_amount, 8);
-                $this->assetService->unlockAmount($dto->user, $quote, $remainingTotal);
+                // Unlock USDT (quote) for remaining quantity
+                $remainingTotal = bcmul($order->price, $order->remaining_quantity, 8);
+                $this->assetService->unlockquantity($dto->user, $quote, $remainingTotal);
 
                 // Broadcast balance update
                 $quoteAsset = $this->assetService->getOrCreateAsset($dto->user, $quote);
                 event(new BalanceUpdated($quoteAsset));
             } else {
-                // Unlock BTC (base) for remaining amount
-                $this->assetService->unlockAmount($dto->user, $base, $order->remaining_amount);
+                // Unlock BTC (base) for remaining quantity
+                $this->assetService->unlockquantity($dto->user, $base, $order->remaining_quantity);
 
                 // Broadcast balance update
                 $baseAsset = $this->assetService->getOrCreateAsset($dto->user, $base);
@@ -161,7 +161,7 @@ class OrderService
             $validation = $this->marketOrderValidator->validate($dto, $availableOrders);
 
             // 3. Estimate cost for balance check
-            $estimatedCost = $this->estimateMarketOrderCost($availableOrders, $dto->amount);
+            $estimatedCost = $this->estimateMarketOrderCost($availableOrders, $dto->quantity);
 
             // 4. Check balance
             if ($dto->isBuyOrder()) {
@@ -177,9 +177,9 @@ class OrderService
                 // Sell order: check base asset (BTC)
                 $baseAsset = $dto->getBaseAsset();
 
-                if (! $this->assetService->hasSufficientBalance($dto->user, $baseAsset, $dto->amount)) {
+                if (! $this->assetService->hasSufficientBalance($dto->user, $baseAsset, $dto->quantity)) {
                     throw new Exception(
-                        "Insufficient balance. Required: {$dto->amount} {$baseAsset}"
+                        "Insufficient balance. Required: {$dto->quantity} {$baseAsset}"
                     );
                 }
             }
@@ -194,9 +194,9 @@ class OrderService
                 'side' => $dto->side,
                 'type' => 'market',
                 'price' => $result->averagePrice,
-                'amount' => $dto->amount,
-                'filled_amount' => $result->filledAmount,
-                'remaining_amount' => '0',
+                'quantity' => $dto->quantity,
+                'filled_quantity' => $result->filledquantity,
+                'remaining_quantity' => '0',
                 'status' => 'filled',
             ]);
 
@@ -209,25 +209,25 @@ class OrderService
                 // Market buy: deduct USDT, add BTC
                 $quoteAsset = $this->assetService->getUserAsset($dto->user, $quote);
                 if ($quoteAsset) {
-                    $quoteAsset->amount = bcsub($quoteAsset->amount, $result->totalCost, 8);
+                    $quoteAsset->quantity = bcsub($quoteAsset->quantity, $result->totalCost, 8);
                     $quoteAsset->save();
                     event(new BalanceUpdated($quoteAsset));
                 }
 
                 $baseAsset = $this->assetService->getOrCreateAsset($dto->user, $base);
-                $this->assetService->addAmount($dto->user, $base, $result->filledAmount);
+                $this->assetService->addquantity($dto->user, $base, $result->filledquantity);
                 event(new BalanceUpdated($baseAsset->fresh()));
             } else {
                 // Market sell: deduct BTC, add USDT
                 $baseAsset = $this->assetService->getUserAsset($dto->user, $base);
                 if ($baseAsset) {
-                    $baseAsset->amount = bcsub($baseAsset->amount, $result->filledAmount, 8);
+                    $baseAsset->quantity = bcsub($baseAsset->quantity, $result->filledquantity, 8);
                     $baseAsset->save();
                     event(new BalanceUpdated($baseAsset));
                 }
 
                 $quoteAsset = $this->assetService->getOrCreateAsset($dto->user, $quote);
-                $this->assetService->addAmount($dto->user, $quote, $result->totalCost);
+                $this->assetService->addquantity($dto->user, $quote, $result->totalCost);
                 event(new BalanceUpdated($quoteAsset->fresh()));
             }
 
@@ -242,9 +242,9 @@ class OrderService
     /**
      * Estimate the cost of a market order.
      */
-    private function estimateMarketOrderCost(Collection $orders, string $amount): string
+    private function estimateMarketOrderCost(Collection $orders, string $quantity): string
     {
-        $remaining = $amount;
+        $remaining = $quantity;
         $totalCost = '0';
 
         foreach ($orders as $order) {
@@ -252,17 +252,17 @@ class OrderService
                 break;
             }
 
-            $fillAmount = bccomp($remaining, $order->remaining_amount, 8) <= 0
+            $fillquantity = bccomp($remaining, $order->remaining_quantity, 8) <= 0
                 ? $remaining
-                : $order->remaining_amount;
+                : $order->remaining_quantity;
 
             $totalCost = bcadd(
                 $totalCost,
-                bcmul($order->price, $fillAmount, 8),
+                bcmul($order->price, $fillquantity, 8),
                 8
             );
 
-            $remaining = bcsub($remaining, $fillAmount, 8);
+            $remaining = bcsub($remaining, $fillquantity, 8);
         }
 
         return $totalCost;

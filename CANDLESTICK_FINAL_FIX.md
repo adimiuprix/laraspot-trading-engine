@@ -280,7 +280,7 @@ Navigate to: `http://scavence.test/exchange`
 ### 4. Test Real-Time Update
 
 **Option A: Place Real Order**
-1. Fill BUY form (price + amount)
+1. Fill BUY form (price + quantity)
 2. Click "Buy BTC"
 3. Wait for order match
 4. Watch chart update!
@@ -294,7 +294,7 @@ php artisan tinker
 $trade = \App\Models\Trade::create([
     'symbol' => 'BTCUSDT',
     'price' => '51000.00',
-    'amount' => '0.5',
+    'quantity' => '0.5',
     'taker_side' => 'buy',
     'buyer_id' => 1,
     'seller_id' => 2,

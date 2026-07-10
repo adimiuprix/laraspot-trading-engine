@@ -61,7 +61,7 @@ class OrderRepository
         $query = Order::where('symbol', $symbol)
             ->where('side', $oppositeSide)
             ->whereIn('status', ['open', 'partially_filled'])
-            ->where('remaining_amount', '>', 0);
+            ->where('remaining_quantity', '>', 0);
 
         if ($side === 'buy') {
             // Buy order can match sell orders at or below the buy price
@@ -87,7 +87,7 @@ class OrderRepository
         $query = Order::where('symbol', $symbol)
             ->where('side', $oppositeSide)
             ->whereIn('status', ['open', 'partially_filled'])
-            ->where('remaining_amount', '>', 0);
+            ->where('remaining_quantity', '>', 0);
 
         if ($side === 'buy') {
             $query->where('price', '<=', $price)
@@ -115,7 +115,7 @@ class OrderRepository
     public function getBids(string $symbol, int $depth): Collection
     {
         return Order::query()
-            ->selectRaw('price, SUM(remaining_amount) as amount')
+            ->selectRaw('price, SUM(remaining_quantity) as quantity')
             ->where('symbol', $symbol)
             ->where('side', 'buy')
             ->open()
@@ -131,7 +131,7 @@ class OrderRepository
     public function getAsks(string $symbol, int $depth): Collection
     {
         return Order::query()
-            ->selectRaw('price, SUM(remaining_amount) as amount')
+            ->selectRaw('price, SUM(remaining_quantity) as quantity')
             ->where('symbol', $symbol)
             ->where('side', 'sell')
             ->open()
@@ -155,7 +155,7 @@ class OrderRepository
         $query = Order::where('symbol', $symbol)
             ->where('side', $oppositeSide)
             ->whereIn('status', ['open', 'partially_filled'])
-            ->where('remaining_amount', '>', 0);
+            ->where('remaining_quantity', '>', 0);
 
         if ($side === 'buy') {
             // Buy market order: get cheapest sells first

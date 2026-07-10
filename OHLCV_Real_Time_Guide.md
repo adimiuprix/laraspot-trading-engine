@@ -11,12 +11,12 @@ Setiap trade minimal memiliki data:
 | trade_id | ID trade |
 | symbol | Pasangan aset |
 | price | Harga transaksi |
-| amount | Jumlah aset |
+| quantity | Jumlah aset |
 | timestamp | Waktu transaksi |
 
 Contoh:
 
-| trade_id | timestamp | symbol | price | amount |
+| trade_id | timestamp | symbol | price | quantity |
 |---:|---|---|---:|---:|
 |1|10:00:05|BTCUSDT|100000|0.5|
 |2|10:00:15|BTCUSDT|100050|0.2|
@@ -42,7 +42,7 @@ Nilai candle:
 - High = harga tertinggi
 - Low = harga terendah
 - Close = harga trade terakhir
-- Volume = total amount
+- Volume = total quantity
 
 Hasil contoh:
 
@@ -86,7 +86,7 @@ open  = price
 high  = price
 low   = price
 close = price
-volume= amount
+volume= quantity
 ```
 
 Jika candle sudah ada:
@@ -95,7 +95,7 @@ Jika candle sudah ada:
 high   = max(high, price)
 low    = min(low, price)
 close  = price
-volume = volume + amount
+volume = volume + quantity
 ```
 
 Open tidak pernah berubah sampai candle selesai.
@@ -124,7 +124,7 @@ Volume, High, Low:
 
 ```sql
 SELECT
-SUM(amount) AS volume,
+SUM(quantity) AS volume,
 MAX(price) AS high,
 MIN(price) AS low
 FROM trades
@@ -190,7 +190,7 @@ Persyaratan:
 4. High adalah harga maksimum.
 5. Low adalah harga minimum.
 6. Close adalah harga trade terakhir.
-7. Volume adalah penjumlahan seluruh amount.
+7. Volume adalah penjumlahan seluruh quantity.
 8. Jika candle belum ada, buat otomatis.
 9. Jika candle sudah ada, update High, Low, Close, dan Volume.
 10. Setelah interval selesai, candle dikunci (final) dan trade berikutnya membentuk candle baru.

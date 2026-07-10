@@ -26,8 +26,8 @@ class OrderBookService
         $formattedBids = $bids->map(function ($order) {
             return [
                 'price' => $order->price,
-                'amount' => $order->amount,
-                'total' => bcmul($order->price, $order->amount, 8),
+                'quantity' => $order->quantity,
+                'total' => bcmul($order->price, $order->quantity, 8),
             ];
         })->toArray();
 
@@ -35,8 +35,8 @@ class OrderBookService
         $formattedAsks = $asks->map(function ($order) {
             return [
                 'price' => $order->price,
-                'amount' => $order->amount,
-                'total' => bcmul($order->price, $order->amount, 8),
+                'quantity' => $order->quantity,
+                'total' => bcmul($order->price, $order->quantity, 8),
             ];
         })->toArray();
 

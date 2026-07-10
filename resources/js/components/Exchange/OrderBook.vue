@@ -1,7 +1,7 @@
 <script setup lang="ts">
 interface OrderBookItem {
     price: string;
-    amount: string;
+    quantity: string;
     total: string;
 }
 
@@ -44,7 +44,7 @@ defineProps<{
                                 Price (USD)
                             </th>
                             <th class="px-3 py-1 text-right font-normal">
-                                Amount (BTC)
+                                quantity (BTC)
                             </th>
                             <th class="px-3 py-1 text-right font-normal">
                                 Total
@@ -66,7 +66,7 @@ defineProps<{
                             </td>
                             <td class="relative px-3 py-1 text-right text-gray-300">
                                 <div class="relative z-10">
-                                    {{ ask.amount }}
+                                    {{ ask.quantity }}
                                 </div>
                             </td>
                             <td class="relative px-3 py-1 text-right text-gray-500">
@@ -78,7 +78,7 @@ defineProps<{
                                     class="absolute inset-y-0 right-0 bg-red-900/10"
                                     :style="{
                                         width:
-                                            (parseFloat(ask.amount) / 2.5) * 100 +
+                                            (parseFloat(ask.quantity) / 2.5) * 100 +
                                             '%',
                                     }"
                                 ></div>
@@ -120,7 +120,7 @@ defineProps<{
                             </td>
                             <td class="relative px-3 py-1 text-right text-gray-300">
                                 <div class="relative z-10">
-                                    {{ bid.amount }}
+                                    {{ bid.quantity }}
                                 </div>
                             </td>
                             <td class="relative px-3 py-1 text-right text-gray-500">
@@ -132,7 +132,7 @@ defineProps<{
                                     class="absolute inset-y-0 right-0 bg-green-900/10"
                                     :style="{
                                         width:
-                                            (parseFloat(bid.amount) / 2.5) * 100 +
+                                            (parseFloat(bid.quantity) / 2.5) * 100 +
                                             '%',
                                     }"
                                 ></div>

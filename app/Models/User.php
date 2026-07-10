@@ -75,7 +75,7 @@ class User extends Authenticatable
     {
         return $this->assets()->firstOrCreate(
             ['symbol' => $symbol],
-            ['amount' => '0', 'locked_amount' => '0']
+            ['quantity' => '0', 'locked_quantity' => '0']
         );
     }
 }

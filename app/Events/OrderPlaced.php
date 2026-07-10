@@ -54,7 +54,7 @@ class OrderPlaced implements ShouldBroadcast
                 'id' => $this->order->id,
                 'side' => $this->order->side,
                 'price' => $this->order->price,
-                'amount' => $this->order->amount,
+                'quantity' => $this->order->quantity,
                 'status' => $this->order->status,
             ],
         ];

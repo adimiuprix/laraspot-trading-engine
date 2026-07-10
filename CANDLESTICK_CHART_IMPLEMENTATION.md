@@ -237,7 +237,7 @@ php artisan tinker
 $trade = \App\Models\Trade::create([
     'symbol' => 'BTCUSDT',
     'price' => '51000.00',
-    'amount' => '0.5',
+    'quantity' => '0.5',
     'taker_side' => 'buy',
     'buyer_id' => 1,
     'seller_id' => 2,

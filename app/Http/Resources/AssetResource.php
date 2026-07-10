@@ -16,10 +16,10 @@ class AssetResource extends JsonResource
     {
         return [
             'symbol' => $this->symbol,
-            'amount' => $this->amount,
-            'locked_amount' => $this->locked_amount,
-            'available' => $this->amount,
-            'total' => bcadd($this->amount, $this->locked_amount, 8),
+            'quantity' => $this->quantity,
+            'locked_quantity' => $this->locked_quantity,
+            'available' => $this->quantity,
+            'total' => bcadd($this->quantity, $this->locked_quantity, 8),
         ];
     }
 }

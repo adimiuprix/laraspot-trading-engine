@@ -16,9 +16,9 @@ use Illuminate\Support\Carbon;
  * @property string $side (buy/sell)
  * @property string $type (limit/market)
  * @property string $price
- * @property string $amount
- * @property string $filled_amount
- * @property string $remaining_amount
+ * @property string $quantity
+ * @property string $filled_quantity
+ * @property string $remaining_quantity
  * @property string $status (open/partially_filled/filled/cancelled)
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -26,7 +26,7 @@ use Illuminate\Support\Carbon;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Trade> $buyTrades
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Trade> $sellTrades
  */
-#[Fillable(['user_id', 'symbol', 'side', 'type', 'price', 'amount', 'filled_amount', 'remaining_amount', 'status'])]
+#[Fillable(['user_id', 'symbol', 'side', 'type', 'price', 'quantity', 'filled_quantity', 'remaining_quantity', 'status'])]
 class Order extends Model
 {
     /**
@@ -38,9 +38,9 @@ class Order extends Model
     {
         return [
             'price' => 'decimal:8',
-            'amount' => 'decimal:8',
-            'filled_amount' => 'decimal:8',
-            'remaining_amount' => 'decimal:8',
+            'quantity' => 'decimal:8',
+            'filled_quantity' => 'decimal:8',
+            'remaining_quantity' => 'decimal:8',
         ];
     }
 
@@ -158,17 +158,17 @@ class Order extends Model
     }
 
     /**
-     * Get the total value of the order (price * remaining_amount for active orders).
+     * Get the total value of the order (price * remaining_quantity for active orders).
      */
     public function getTotalValueAttribute(): string
     {
-        // For active orders (open/partially_filled), use remaining_amount
+        // For active orders (open/partially_filled), use remaining_quantity
         if (in_array($this->status, ['open', 'partially_filled'])) {
-            return bcmul($this->price, $this->remaining_amount, 8);
+            return bcmul($this->price, $this->remaining_quantity, 8);
         }
 
-        // For filled/cancelled, use original amount
-        return bcmul($this->price, $this->amount, 8);
+        // For filled/cancelled, use original quantity
+        return bcmul($this->price, $this->quantity, 8);
     }
 
     /**
@@ -176,7 +176,7 @@ class Order extends Model
      */
     public function isFullyFilled(): bool
     {
-        return bccomp($this->filled_amount, $this->amount, 8) === 0;
+        return bccomp($this->filled_quantity, $this->quantity, 8) === 0;
     }
 
     /**
@@ -184,8 +184,8 @@ class Order extends Model
      */
     public function isPartiallyFilled(): bool
     {
-        return bccomp($this->filled_amount, '0', 8) > 0
-            && bccomp($this->filled_amount, $this->amount, 8) < 0;
+        return bccomp($this->filled_quantity, '0', 8) > 0
+            && bccomp($this->filled_quantity, $this->quantity, 8) < 0;
     }
 
     /**
@@ -193,20 +193,20 @@ class Order extends Model
      */
     public function getFillPercentage(): string
     {
-        if (bccomp($this->amount, '0', 8) === 0) {
+        if (bccomp($this->quantity, '0', 8) === 0) {
             return '0';
         }
 
-        return bcdiv(bcmul($this->filled_amount, '100', 8), $this->amount, 2);
+        return bcdiv(bcmul($this->filled_quantity, '100', 8), $this->quantity, 2);
     }
 
     /**
-     * Add fill amount and update status.
+     * Add fill quantity and update status.
      */
-    public function addFill(string $fillAmount): void
+    public function addFill(string $fillquantity): void
     {
-        $this->filled_amount = bcadd($this->filled_amount, $fillAmount, 8);
-        $this->remaining_amount = bcsub($this->amount, $this->filled_amount, 8);
+        $this->filled_quantity = bcadd($this->filled_quantity, $fillquantity, 8);
+        $this->remaining_quantity = bcsub($this->quantity, $this->filled_quantity, 8);
 
         if ($this->isFullyFilled()) {
             $this->status = 'filled';
@@ -222,8 +222,8 @@ class Order extends Model
      */
     public function markAsFilled(): void
     {
-        $this->filled_amount = $this->amount;
-        $this->remaining_amount = '0';
+        $this->filled_quantity = $this->quantity;
+        $this->remaining_quantity = '0';
         $this->status = 'filled';
         $this->save();
     }

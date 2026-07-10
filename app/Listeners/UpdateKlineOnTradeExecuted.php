@@ -50,7 +50,7 @@ class UpdateKlineOnTradeExecuted implements ShouldQueue
                 'trade_id' => $trade->id,
                 'symbol' => $trade->buyerOrder->symbol,
                 'price' => $trade->price,
-                'amount' => $trade->amount,
+                'quantity' => $trade->quantity,
             ]);
 
             // Update klines for all intervals

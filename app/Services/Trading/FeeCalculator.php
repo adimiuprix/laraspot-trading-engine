@@ -12,9 +12,9 @@ class FeeCalculator
     /**
      * Calculate trading fee.
      */
-    public function calculate(string $price, string $amount): string
+    public function calculate(string $price, string $quantity): string
     {
-        $total = bcmul($price, $amount, 8);
+        $total = bcmul($price, $quantity, 8);
 
         return bcmul($total, (string) $this->feeRate, 8);
     }

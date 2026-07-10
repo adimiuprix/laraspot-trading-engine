@@ -17,7 +17,7 @@ return [
         // Maximum allowed price impact percentage (how much the order moves the market)
         'max_price_impact_percent' => env('MARKET_ORDER_MAX_PRICE_IMPACT', 10),
 
-        // Minimum liquidity ratio (e.g., 0.1 = at least 10% of order amount must be available)
+        // Minimum liquidity ratio (e.g., 0.1 = at least 10% of order quantity must be available)
         'min_liquidity_ratio' => env('MARKET_ORDER_MIN_LIQUIDITY_RATIO', 0.1),
 
         // Maximum number of orders to fetch for matching
@@ -45,11 +45,11 @@ return [
     */
 
     'limits' => [
-        // Minimum order amount (in base currency)
-        'min_order_amount' => env('MIN_ORDER_AMOUNT', '0.0001'),
+        // Minimum order quantity (in base currency)
+        'min_order_quantity' => env('MIN_ORDER_quantity', '0.0001'),
 
-        // Maximum order amount (in base currency, 0 = unlimited)
-        'max_order_amount' => env('MAX_ORDER_AMOUNT', 0),
+        // Maximum order quantity (in base currency, 0 = unlimited)
+        'max_order_quantity' => env('MAX_ORDER_quantity', 0),
 
         // Minimum order value (in quote currency)
         'min_order_value' => env('MIN_ORDER_VALUE', '10'),

@@ -11,13 +11,13 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $user_id
  * @property string $symbol
- * @property string $amount
- * @property string $locked_amount
+ * @property string $quantity
+ * @property string $locked_quantity
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $user
  */
-#[Fillable(['user_id', 'symbol', 'amount', 'locked_amount'])]
+#[Fillable(['user_id', 'symbol', 'quantity', 'locked_quantity'])]
 class Asset extends Model
 {
     /**
@@ -28,8 +28,8 @@ class Asset extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal:8',
-            'locked_amount' => 'decimal:8',
+            'quantity' => 'decimal:8',
+            'locked_quantity' => 'decimal:8',
         ];
     }
 
@@ -46,48 +46,48 @@ class Asset extends Model
      */
     public function getAvailableBalanceAttribute(): string
     {
-        return (string) $this->amount;
+        return (string) $this->quantity;
     }
 
     /**
-     * Lock a specific amount for trading.
+     * Lock a specific quantity for trading.
      */
-    public function lockAmount(string $amount): void
+    public function lockquantity(string $quantity): void
     {
-        $this->decrement('amount', $amount);
-        $this->increment('locked_amount', $amount);
+        $this->decrement('quantity', $quantity);
+        $this->increment('locked_quantity', $quantity);
     }
 
     /**
-     * Unlock a specific amount (e.g., when order is cancelled).
+     * Unlock a specific quantity (e.g., when order is cancelled).
      */
-    public function unlockAmount(string $amount): void
+    public function unlockquantity(string $quantity): void
     {
-        $this->decrement('locked_amount', $amount);
-        $this->increment('amount', $amount);
+        $this->decrement('locked_quantity', $quantity);
+        $this->increment('quantity', $quantity);
     }
 
     /**
-     * Release locked amount after trade execution.
+     * Release locked quantity after trade execution.
      */
-    public function releaseLocked(string $amount): void
+    public function releaseLocked(string $quantity): void
     {
-        $this->decrement('locked_amount', $amount);
+        $this->decrement('locked_quantity', $quantity);
     }
 
     /**
-     * Add amount to balance (e.g., after buying).
+     * Add quantity to balance (e.g., after buying).
      */
-    public function addAmount(string $amount): void
+    public function addquantity(string $quantity): void
     {
-        $this->increment('amount', $amount);
+        $this->increment('quantity', $quantity);
     }
 
     /**
      * Check if user has sufficient available balance.
      */
-    public function hasSufficientBalance(string $amount): bool
+    public function hasSufficientBalance(string $quantity): bool
     {
-        return bccomp($this->amount, $amount, 8) >= 0;
+        return bccomp($this->quantity, $quantity, 8) >= 0;
     }
 }

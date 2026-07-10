@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('symbol', 10);
-            $table->decimal('amount', 20, 8)->default(0);
-            $table->decimal('locked_amount', 20, 8)->default(0);
+            $table->decimal('quantity', 20, 8)->default(0);
+            $table->decimal('locked_quantity', 20, 8)->default(0);
             $table->timestamps();
 
             // Ensure a user cannot have duplicate asset entries for the same symbol

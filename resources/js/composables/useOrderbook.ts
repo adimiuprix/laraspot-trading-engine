@@ -3,8 +3,8 @@ import { ref, onUnmounted } from 'vue';
 
 export function useOrderbook(symbol: string) {
     const orderbook = ref<{
-        bids: Array<{ price: string; amount: string; total: string }>;
-        asks: Array<{ price: string; amount: string; total: string }>;
+        bids: Array<{ price: string; quantity: string; total: string }>;
+        asks: Array<{ price: string; quantity: string; total: string }>;
         last_price: string;
         spread: string;
     }>({

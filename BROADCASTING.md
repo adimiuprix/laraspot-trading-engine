@@ -26,7 +26,7 @@ Example: orderbook.BTC/USDT
     id: number,
     side: 'buy' | 'sell',
     price: string,
-    amount: string,
+    quantity: string,
     status: string
   }
 }
@@ -48,7 +48,7 @@ Example: trades.BTC/USDT
 {
   trade: {
     price: string,
-    amount: string,
+    quantity: string,
     total: string,
     side: 'buy' | 'sell',
     time: string (ISO8601)
@@ -78,7 +78,7 @@ Example: user.123
     symbol: string,
     side: 'buy' | 'sell',
     price: string,
-    amount: string,
+    quantity: string,
     status: 'open' | 'filled' | 'cancelled',
     updated_at: string
   }
@@ -90,8 +90,8 @@ Example: user.123
 {
   asset: {
     symbol: string,
-    amount: string,
-    locked_amount: string,
+    quantity: string,
+    locked_quantity: string,
     available: string,
     total: string
   }

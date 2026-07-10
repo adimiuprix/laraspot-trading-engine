@@ -11,7 +11,7 @@ class PlaceMarketOrderDTO
         public readonly User $user,
         public readonly string $symbol,
         public readonly string $side,
-        public readonly string $amount,
+        public readonly string $quantity,
     ) {}
 
     /**
@@ -23,7 +23,7 @@ class PlaceMarketOrderDTO
             user: $request->user(),
             symbol: $request->validated('symbol'),
             side: $request->validated('side'),
-            amount: $request->validated('amount'),
+            quantity: $request->validated('quantity'),
         );
     }
 

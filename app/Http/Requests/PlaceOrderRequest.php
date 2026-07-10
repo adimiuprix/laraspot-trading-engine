@@ -27,7 +27,7 @@ class PlaceOrderRequest extends FormRequest
             'side' => ['required', 'string', 'in:buy,sell'],
             'type' => ['required', 'string', 'in:limit,market'],
             'price' => ['required_if:type,limit', 'nullable', 'numeric', 'min:0.00000001'],
-            'amount' => ['required', 'numeric', 'min:0.00000001'],
+            'quantity' => ['required', 'numeric', 'min:0.00000001'],
         ];
     }
 
@@ -42,7 +42,7 @@ class PlaceOrderRequest extends FormRequest
             'type.in' => 'Type must be either limit or market',
             'price.required_if' => 'Price is required for limit orders',
             'price.min' => 'Price must be greater than 0',
-            'amount.min' => 'Amount must be greater than 0',
+            'quantity.min' => 'quantity must be greater than 0',
         ];
     }
 }

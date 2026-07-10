@@ -19,7 +19,7 @@ test('kline is created when first trade occurs', function () {
     $interval = '1m';
     $timestamp = 1752043517; // Some arbitrary timestamp
     $price = '50000.00000000';
-    $amount = '0.10000000';
+    $quantity = '0.10000000';
 
     // Act
     $kline = $this->klineService->updateOrCreateFromTrade(
@@ -27,7 +27,7 @@ test('kline is created when first trade occurs', function () {
         interval: $interval,
         timestamp: $timestamp,
         price: $price,
-        amount: $amount
+        quantity: $quantity
     );
 
     // Assert
@@ -38,7 +38,7 @@ test('kline is created when first trade occurs', function () {
     expect($kline->high)->toBe($price);
     expect($kline->low)->toBe($price);
     expect($kline->close)->toBe($price);
-    expect($kline->volume)->toBe($amount);
+    expect($kline->volume)->toBe($quantity);
     expect($kline->trades_count)->toBe(1);
     expect($kline->is_closed)->toBeFalse();
 });
@@ -58,7 +58,7 @@ test('bucket time calculation is correct', function () {
             interval: '1m',
             timestamp: $case['timestamp'],
             price: '50000',
-            amount: '0.1'
+            quantity: '0.1'
         );
 
         // Clean up for next iteration
@@ -79,7 +79,7 @@ test('kline high is updated when price increases', function () {
         interval: $interval,
         timestamp: $timestamp,
         price: '50000.00000000',
-        amount: '0.10000000'
+        quantity: '0.10000000'
     );
 
     // Second trade: price 51000 (higher)
@@ -88,7 +88,7 @@ test('kline high is updated when price increases', function () {
         interval: $interval,
         timestamp: $timestamp + 10, // Same bucket
         price: '51000.00000000',
-        amount: '0.05000000'
+        quantity: '0.05000000'
     );
 
     expect($kline->open)->toBe('50000.00000000'); // Open doesn't change
@@ -109,7 +109,7 @@ test('kline low is updated when price decreases', function () {
         interval: $interval,
         timestamp: $timestamp,
         price: '50000.00000000',
-        amount: '0.10000000'
+        quantity: '0.10000000'
     );
 
     // Second trade: price 49000 (lower)
@@ -118,7 +118,7 @@ test('kline low is updated when price decreases', function () {
         interval: $interval,
         timestamp: $timestamp + 10,
         price: '49000.00000000',
-        amount: '0.05000000'
+        quantity: '0.05000000'
     );
 
     expect($kline->open)->toBe('50000.00000000'); // Open doesn't change
@@ -130,7 +130,7 @@ test('different intervals create different klines', function () {
     $symbol = 'BTC/USDT';
     $timestamp = 1752043517;
     $price = '50000.00000000';
-    $amount = '0.10000000';
+    $quantity = '0.10000000';
 
     // Currently only 1m interval is active
     $this->klineService->updateOrCreateFromTrade(
@@ -138,7 +138,7 @@ test('different intervals create different klines', function () {
         interval: '1m',
         timestamp: $timestamp,
         price: $price,
-        amount: $amount
+        quantity: $quantity
     );
 
     expect(Kline::count())->toBe(1);

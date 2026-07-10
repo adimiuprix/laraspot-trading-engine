@@ -31,7 +31,7 @@ class AssetService
     /**
      * Check if user has sufficient balance.
      */
-    public function hasSufficientBalance(User $user, string $symbol, string $amount): bool
+    public function hasSufficientBalance(User $user, string $symbol, string $quantity): bool
     {
         $asset = $this->getUserAsset($user, $symbol);
 
@@ -39,49 +39,49 @@ class AssetService
             return false;
         }
 
-        return $asset->hasSufficientBalance($amount);
+        return $asset->hasSufficientBalance($quantity);
     }
 
     /**
-     * Lock amount for order.
+     * Lock quantity for order.
      */
-    public function lockAmount(User $user, string $symbol, string $amount): void
+    public function lockquantity(User $user, string $symbol, string $quantity): void
     {
         $asset = $this->getOrCreateAsset($user, $symbol);
-        $this->assetRepository->lockAmount($asset, $amount);
+        $this->assetRepository->lockquantity($asset, $quantity);
     }
 
     /**
-     * Unlock amount (e.g., when order is cancelled).
+     * Unlock quantity (e.g., when order is cancelled).
      */
-    public function unlockAmount(User $user, string $symbol, string $amount): void
+    public function unlockquantity(User $user, string $symbol, string $quantity): void
     {
         $asset = $this->getUserAsset($user, $symbol);
 
         if ($asset) {
-            $this->assetRepository->unlockAmount($asset, $amount);
+            $this->assetRepository->unlockquantity($asset, $quantity);
         }
     }
 
     /**
-     * Release locked amount and deduct from locked balance.
+     * Release locked quantity and deduct from locked balance.
      */
-    public function releaseLocked(User $user, string $symbol, string $amount): void
+    public function releaseLocked(User $user, string $symbol, string $quantity): void
     {
         $asset = $this->getUserAsset($user, $symbol);
 
         if ($asset) {
-            $this->assetRepository->releaseLocked($asset, $amount);
+            $this->assetRepository->releaseLocked($asset, $quantity);
         }
     }
 
     /**
-     * Add amount to user balance.
+     * Add quantity to user balance.
      */
-    public function addAmount(User $user, string $symbol, string $amount): void
+    public function addquantity(User $user, string $symbol, string $quantity): void
     {
         $asset = $this->getOrCreateAsset($user, $symbol);
-        $this->assetRepository->addAmount($asset, $amount);
+        $this->assetRepository->addquantity($asset, $quantity);
     }
 
     /**

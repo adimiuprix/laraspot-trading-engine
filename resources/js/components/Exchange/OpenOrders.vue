@@ -6,9 +6,9 @@ interface Order {
     symbol: string;
     side: 'buy' | 'sell';
     price: string;
-    amount: string;
-    filled_amount?: string;
-    remaining_amount?: string;
+    quantity: string;
+    filled_quantity?: string;
+    remaining_quantity?: string;
     total: string;
     status?: 'open' | 'partially_filled' | 'filled' | 'cancelled';
 }
@@ -39,9 +39,9 @@ async function handleCancel(orderId: number) {
 }
 
 function getFillPercentage(order: Order): number {
-    if (!order.filled_amount || !order.amount) return 0;
-    const filled = parseFloat(order.filled_amount);
-    const total = parseFloat(order.amount);
+    if (!order.filled_quantity || !order.quantity) return 0;
+    const filled = parseFloat(order.filled_quantity);
+    const total = parseFloat(order.quantity);
     return total > 0 ? (filled / total) * 100 : 0;
 }
 
@@ -206,14 +206,14 @@ function getStatusLabel(status?: string): string {
                     <div
                         v-if="
                             order.status === 'partially_filled' &&
-                            order.filled_amount
+                            order.filled_quantity
                         "
                         class="mb-2"
                     >
                         <div
                             class="mb-1 flex justify-between text-xs text-gray-400"
                         >
-                            <span>Filled: {{ order.filled_amount }}</span>
+                            <span>Filled: {{ order.filled_quantity }}</span>
                             <span>{{ getFillPercentage(order).toFixed(1) }}%</span>
                         </div>
                         <div class="h-1.5 w-full rounded-full bg-gray-700">
@@ -234,9 +234,9 @@ function getStatusLabel(status?: string): string {
                             </div>
                         </div>
                         <div>
-                            <div class="mb-0.5 text-gray-500">Amount</div>
+                            <div class="mb-0.5 text-gray-500">quantity</div>
                             <div class="font-medium text-white">
-                                {{ order.remaining_amount || order.amount }}
+                                {{ order.remaining_quantity || order.quantity }}
                             </div>
                         </div>
                         <div>

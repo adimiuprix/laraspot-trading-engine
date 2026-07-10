@@ -113,8 +113,8 @@ async function placeOrder() {
         return;
     }
 
-    if (!orderForm.value.amount) {
-        submitError.value = 'Amount is required';
+    if (!orderForm.value.quantity) {
+        submitError.value = 'quantity is required';
 
         return;
     }
@@ -132,7 +132,7 @@ async function placeOrder() {
                 orderType.value === 'market'
                     ? currentPrice.value
                     : orderForm.value.price,
-            amount: orderForm.value.amount,
+            quantity: orderForm.value.quantity,
         });
 
         submitSuccess.value = true;
@@ -218,7 +218,7 @@ onUnmounted(() => {
                     :submit-success="submitSuccess"
                     :assets-loading="assetsLoading"
                     @update-price="(value) => (orderForm.price = value)"
-                    @update-amount="(value) => (orderForm.amount = value)"
+                    @update-quantity="(value) => (orderForm.quantity = value)"
                     @set-order-tab="handleSetOrderTab"
                     @set-order-type="setOrderType"
                     @validate-input="validateNumberInput"

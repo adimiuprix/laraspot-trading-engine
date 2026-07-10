@@ -102,7 +102,7 @@ class Kline extends Model
     /**
      * Update kline with new trade data.
      */
-    public function updateWithTrade(string $price, string $amount, string $quoteAmount): void
+    public function updateWithTrade(string $price, string $quantity, string $quotequantity): void
     {
         // Update high
         if (bccomp($price, $this->high, 8) > 0) {
@@ -118,8 +118,8 @@ class Kline extends Model
         $this->close = $price;
 
         // Add volume
-        $this->volume = bcadd($this->volume, $amount, 8);
-        $this->quote_volume = bcadd($this->quote_volume, $quoteAmount, 8);
+        $this->volume = bcadd($this->volume, $quantity, 8);
+        $this->quote_volume = bcadd($this->quote_volume, $quotequantity, 8);
 
         // Increment trades count
         $this->trades_count++;

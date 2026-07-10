@@ -16,17 +16,17 @@ class MarketOrderValidator
         PlaceMarketOrderDTO $dto,
         Collection $availableOrders
     ): MarketOrderValidationResult {
-        $totalAvailable = $availableOrders->sum('remaining_amount');
+        $totalAvailable = $availableOrders->sum('remaining_quantity');
 
         // 1. Check absolute liquidity
-        if (bccomp($totalAvailable, $dto->amount, 8) < 0) {
+        if (bccomp($totalAvailable, $dto->quantity, 8) < 0) {
             throw new InsufficientLiquidityException(
-                "Insufficient liquidity. Requested: {$dto->amount}, Available: {$totalAvailable}"
+                "Insufficient liquidity. Requested: {$dto->quantity}, Available: {$totalAvailable}"
             );
         }
 
         // 2. Calculate price impact
-        $priceImpact = $this->calculatePriceImpact($availableOrders, $dto->amount);
+        $priceImpact = $this->calculatePriceImpact($availableOrders, $dto->quantity);
         
         if ($priceImpact > config('trading.market_order.max_price_impact_percent', 10)) {
             throw new ExcessiveSlippageException(
@@ -38,7 +38,7 @@ class MarketOrderValidator
 
         // 3. Calculate slippage
         $bestPrice = $availableOrders->first()->price;
-        $averagePrice = $this->estimateAveragePrice($availableOrders, $dto->amount);
+        $averagePrice = $this->estimateAveragePrice($availableOrders, $dto->quantity);
         $slippage = $this->calculateSlippage($bestPrice, $averagePrice);
 
         if ($slippage > config('trading.market_order.max_slippage_percent', 5)) {
@@ -54,21 +54,21 @@ class MarketOrderValidator
             estimatedAveragePrice: $averagePrice,
             slippage: $slippage,
             priceImpact: $priceImpact,
-            ordersToFill: $this->getOrdersToFill($availableOrders, $dto->amount)
+            ordersToFill: $this->getOrdersToFill($availableOrders, $dto->quantity)
         );
     }
 
     /**
      * Calculate price impact (how much order moves the market).
      */
-    private function calculatePriceImpact(Collection $orders, string $amount): float
+    private function calculatePriceImpact(Collection $orders, string $quantity): float
     {
         if ($orders->isEmpty()) {
             return 0;
         }
 
         $bestPrice = $orders->first()->price;
-        $worstPrice = $this->getWorstPriceForAmount($orders, $amount);
+        $worstPrice = $this->getWorstPriceForquantity($orders, $quantity);
 
         $impact = bcdiv(
             bcsub($worstPrice, $bestPrice, 8),
@@ -80,11 +80,11 @@ class MarketOrderValidator
     }
 
     /**
-     * Get the worst price that will be paid when filling this amount.
+     * Get the worst price that will be paid when filling this quantity.
      */
-    private function getWorstPriceForAmount(Collection $orders, string $amount): string
+    private function getWorstPriceForquantity(Collection $orders, string $quantity): string
     {
-        $remaining = $amount;
+        $remaining = $quantity;
         $worstPrice = '0';
 
         foreach ($orders as $order) {
@@ -93,11 +93,11 @@ class MarketOrderValidator
             }
 
             $worstPrice = $order->price;
-            $fillAmount = bccomp($remaining, $order->remaining_amount, 8) <= 0
+            $fillquantity = bccomp($remaining, $order->remaining_quantity, 8) <= 0
                 ? $remaining
-                : $order->remaining_amount;
+                : $order->remaining_quantity;
 
-            $remaining = bcsub($remaining, $fillAmount, 8);
+            $remaining = bcsub($remaining, $fillquantity, 8);
         }
 
         return $worstPrice;
@@ -106,9 +106,9 @@ class MarketOrderValidator
     /**
      * Estimate average execution price.
      */
-    private function estimateAveragePrice(Collection $orders, string $amount): string
+    private function estimateAveragePrice(Collection $orders, string $quantity): string
     {
-        $remaining = $amount;
+        $remaining = $quantity;
         $totalCost = '0';
 
         foreach ($orders as $order) {
@@ -116,20 +116,20 @@ class MarketOrderValidator
                 break;
             }
 
-            $fillAmount = bccomp($remaining, $order->remaining_amount, 8) <= 0
+            $fillquantity = bccomp($remaining, $order->remaining_quantity, 8) <= 0
                 ? $remaining
-                : $order->remaining_amount;
+                : $order->remaining_quantity;
 
             $totalCost = bcadd(
                 $totalCost,
-                bcmul($order->price, $fillAmount, 8),
+                bcmul($order->price, $fillquantity, 8),
                 8
             );
 
-            $remaining = bcsub($remaining, $fillAmount, 8);
+            $remaining = bcsub($remaining, $fillquantity, 8);
         }
 
-        return bcdiv($totalCost, $amount, 8);
+        return bcdiv($totalCost, $quantity, 8);
     }
 
     /**
@@ -146,9 +146,9 @@ class MarketOrderValidator
     /**
      * Get list of orders that will be filled.
      */
-    private function getOrdersToFill(Collection $orders, string $amount): Collection
+    private function getOrdersToFill(Collection $orders, string $quantity): Collection
     {
-        $remaining = $amount;
+        $remaining = $quantity;
         $ordersToFill = collect();
 
         foreach ($orders as $order) {
@@ -156,17 +156,17 @@ class MarketOrderValidator
                 break;
             }
 
-            $fillAmount = bccomp($remaining, $order->remaining_amount, 8) <= 0
+            $fillquantity = bccomp($remaining, $order->remaining_quantity, 8) <= 0
                 ? $remaining
-                : $order->remaining_amount;
+                : $order->remaining_quantity;
 
             $ordersToFill->push([
                 'order_id' => $order->id,
                 'price' => $order->price,
-                'fill_amount' => $fillAmount,
+                'fill_quantity' => $fillquantity,
             ]);
 
-            $remaining = bcsub($remaining, $fillAmount, 8);
+            $remaining = bcsub($remaining, $fillquantity, 8);
         }
 
         return $ordersToFill;

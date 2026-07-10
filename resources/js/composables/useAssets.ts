@@ -3,8 +3,8 @@ import { ref, onUnmounted } from 'vue';
 
 interface Asset {
     symbol: string;
-    amount: string;
-    locked_amount: string;
+    quantity: string;
+    locked_quantity: string;
     available: string;
     total: string;
 }

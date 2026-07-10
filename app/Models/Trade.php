@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
  * @property int $buyer_id
  * @property int $seller_id
  * @property string $price
- * @property string $amount
+ * @property string $quantity
  * @property string $commission
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -24,7 +24,7 @@ use Illuminate\Support\Carbon;
  * @property-read User $buyer
  * @property-read User $seller
  */
-#[Fillable(['buyer_order_id', 'seller_order_id', 'buyer_id', 'seller_id', 'trade_time', 'price', 'amount', 'quote_amount', 'commission', 'maker_side'])]
+#[Fillable(['buyer_order_id', 'seller_order_id', 'buyer_id', 'seller_id', 'trade_time', 'price', 'quantity', 'quote_amount', 'commission', 'maker_side'])]
 class Trade extends Model
 {
     /**
@@ -36,7 +36,7 @@ class Trade extends Model
     {
         return [
             'price' => 'decimal:8',
-            'amount' => 'decimal:8',
+            'quantity' => 'decimal:8',
             'quote_amount' => 'decimal:8',
             'commission' => 'decimal:8',
         ];
@@ -103,11 +103,11 @@ class Trade extends Model
     }
 
     /**
-     * Get the total value of the trade (price * amount).
+     * Get the total value of the trade (price * quantity).
      */
     public function getTotalValueAttribute(): string
     {
-        return bcmul($this->price, $this->amount, 8);
+        return bcmul($this->price, $this->quantity, 8);
     }
 
     /**

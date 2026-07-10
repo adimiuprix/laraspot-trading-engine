@@ -27,8 +27,8 @@ This feature enhances the orderbook API to match Binance's response format and a
 
 #### Acceptance Criteria
 
-1. THE Orderbook_API SHALL return bids as a two-dimensional array where each element is ["price", "amount", "total"]
-2. THE Orderbook_API SHALL return asks as a two-dimensional array where each element is ["price", "amount", "total"]
+1. THE Orderbook_API SHALL return bids as a two-dimensional array where each element is ["price", "quantity", "total"]
+2. THE Orderbook_API SHALL return asks as a two-dimensional array where each element is ["price", "quantity", "total"]
 3. THE Response_Formatter SHALL convert all numeric values to string representation
 4. THE Orderbook_API SHALL maintain backward compatibility by preserving last_price and spread fields
 5. WHEN the orderbook is empty, THE Orderbook_API SHALL return empty arrays for bids and asks
@@ -57,13 +57,13 @@ This feature enhances the orderbook API to match Binance's response format and a
 
 #### Acceptance Criteria
 
-1. WHEN multiple orders exist at the same price level, THE Aggregation_Service SHALL sum their amounts
-2. THE Aggregation_Service SHALL calculate total as price multiplied by aggregated amount
+1. WHEN multiple orders exist at the same price level, THE Aggregation_Service SHALL sum their quantitys
+2. THE Aggregation_Service SHALL calculate total as price multiplied by aggregated quantity
 3. THE Aggregation_Service SHALL perform aggregation before applying depth limit
 4. THE Aggregation_Service SHALL preserve time priority within each price level for matching purposes
-5. WHEN aggregating amounts, THE Aggregation_Service SHALL use bcadd with precision from Symbol_Configuration
+5. WHEN aggregating quantitys, THE Aggregation_Service SHALL use bcadd with precision from Symbol_Configuration
 6. WHEN calculating totals, THE Aggregation_Service SHALL use bcmul with precision from Symbol_Configuration
-7. THE Aggregation_Service SHALL exclude orders with zero remaining_amount from aggregation
+7. THE Aggregation_Service SHALL exclude orders with zero remaining_quantity from aggregation
 8. THE Aggregation_Service SHALL process bids and asks independently
 
 ### Requirement 4: Tick Size-Based Aggregation
@@ -79,7 +79,7 @@ This feature enhances the orderbook API to match Binance's response format and a
 5. WHEN rounding to tick boundaries, THE Aggregation_Service SHALL use the formula: floor(price / tick_size) * tick_size
 6. THE Aggregation_Service SHALL apply tick size aggregation after retrieving orders from Order_Repository
 7. THE Aggregation_Service SHALL maintain distinct price levels after tick size aggregation
-8. WHEN orders round to the same tick boundary, THE Aggregation_Service SHALL aggregate their amounts
+8. WHEN orders round to the same tick boundary, THE Aggregation_Service SHALL aggregate their quantitys
 
 ### Requirement 5: Query Parameter Support
 
@@ -133,7 +133,7 @@ This feature enhances the orderbook API to match Binance's response format and a
 #### Acceptance Criteria
 
 1. THE Response_Formatter SHALL format prices using precision from Symbol_Configuration
-2. THE Response_Formatter SHALL format amounts using precision from Symbol_Configuration
+2. THE Response_Formatter SHALL format quantitys using precision from Symbol_Configuration
 3. THE Response_Formatter SHALL format totals using precision from Symbol_Configuration
 4. THE Response_Formatter SHALL use bcscale to set precision for all bc math operations
 5. THE Response_Formatter SHALL trim trailing zeros from formatted numbers
@@ -178,8 +178,8 @@ This feature enhances the orderbook API to match Binance's response format and a
 #### Acceptance Criteria
 
 1. THE Order_Repository SHALL include only orders with status 'open' or 'partially_filled'
-2. THE Order_Repository SHALL exclude orders with remaining_amount equal to zero
-3. THE Aggregation_Service SHALL use the remaining_amount field for calculations, not the original amount
+2. THE Order_Repository SHALL exclude orders with remaining_quantity equal to zero
+3. THE Aggregation_Service SHALL use the remaining_quantity field for calculations, not the original quantity
 4. THE OrderBook_Service SHALL retrieve orders within a database transaction
 5. THE Orderbook_API SHALL reflect changes to orders within 1 second of order updates
 6. THE Order_Repository SHALL sort bids by price descending then created_at ascending
@@ -194,7 +194,7 @@ This feature enhances the orderbook API to match Binance's response format and a
 
 1. THE Orderbook_API SHALL maintain the root response structure with bids, asks, last_price, and spread fields
 2. THE Orderbook_API SHALL return bids and asks as arrays of arrays, not objects
-3. THE Orderbook_API SHALL use consistent field ordering: [price, amount, total]
+3. THE Orderbook_API SHALL use consistent field ordering: [price, quantity, total]
 4. THE Orderbook_API SHALL set Content-Type header to application/json
 5. THE Orderbook_API SHALL support CORS headers if configured
 6. THE Orderbook_API SHALL version the endpoint path when making breaking changes

@@ -2,14 +2,14 @@ import { ref, computed } from 'vue';
 
 interface OrderForm {
     price: string;
-    amount: string;
+    quantity: string;
     total: string;
 }
 
 export function useTradingForm(currentPrice: () => string) {
     const orderForm = ref<OrderForm>({
         price: '',
-        amount: '',
+        quantity: '',
         total: '',
     });
 
@@ -39,7 +39,7 @@ export function useTradingForm(currentPrice: () => string) {
 
     function setOrderTab(tab: 'buy' | 'sell') {
         activeOrderTab.value = tab;
-        orderForm.value = { price: '', amount: '', total: '' };
+        orderForm.value = { price: '', quantity: '', total: '' };
     }
 
     function setOrderType(type: 'limit' | 'market') {
@@ -58,12 +58,12 @@ export function useTradingForm(currentPrice: () => string) {
         const price = orderForm.value.price
             ? parseFloat(orderForm.value.price)
             : 0;
-        const amount = orderForm.value.amount
-            ? parseFloat(orderForm.value.amount)
+        const quantity = orderForm.value.quantity
+            ? parseFloat(orderForm.value.quantity)
             : 0;
 
-        if (price && amount) {
-            const total = price * amount;
+        if (price && quantity) {
+            const total = price * quantity;
             orderForm.value.total = total.toFixed(8);
         } else {
             orderForm.value.total = '';
@@ -90,8 +90,8 @@ export function useTradingForm(currentPrice: () => string) {
 
                 if (field === 'price') {
                     orderForm.value.price = input.value;
-                } else if (field === 'amount') {
-                    orderForm.value.amount = input.value;
+                } else if (field === 'quantity') {
+                    orderForm.value.quantity = input.value;
                 }
             }
         }
@@ -113,9 +113,9 @@ export function useTradingForm(currentPrice: () => string) {
 
         if (activeOrderTab.value === 'buy') {
             const availableUsdt = balanceValue * (percent / 100);
-            orderForm.value.amount = (availableUsdt / priceValue).toFixed(8);
+            orderForm.value.quantity = (availableUsdt / priceValue).toFixed(8);
         } else {
-            orderForm.value.amount = (balanceValue * (percent / 100)).toFixed(
+            orderForm.value.quantity = (balanceValue * (percent / 100)).toFixed(
                 8,
             );
         }
@@ -124,7 +124,7 @@ export function useTradingForm(currentPrice: () => string) {
     }
 
     function resetForm() {
-        orderForm.value = { price: '', amount: '', total: '' };
+        orderForm.value = { price: '', quantity: '', total: '' };
     }
 
     return {

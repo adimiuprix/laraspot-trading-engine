@@ -112,7 +112,7 @@ Open  = price
 High  = price
 Low   = price
 Close = price
-Volume = amount
+Volume = quantity
 ```
 
 **Trade Berikutnya (Update Candle):**
@@ -121,7 +121,7 @@ Open  = TIDAK BERUBAH
 High  = max(high, price)
 Low   = min(low, price)
 Close = price (selalu update ke harga terakhir)
-Volume = volume + amount
+Volume = volume + quantity
 ```
 
 ### 3. Flow Lengkap

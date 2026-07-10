@@ -1,7 +1,7 @@
 <script setup lang="ts">
 interface Trade {
     price: string;
-    amount: string;
+    quantity: string;
     side: 'buy' | 'sell';
     time: string;
 }
@@ -43,7 +43,7 @@ function formatTime(isoString: string) {
                             Price (USD)
                         </th>
                         <th class="px-4 py-2 text-right font-normal">
-                            Amount (BTC)
+                            quantity (BTC)
                         </th>
                         <th class="px-4 py-2 text-right font-normal">Time</th>
                     </tr>
@@ -65,7 +65,7 @@ function formatTime(isoString: string) {
                             {{ parseFloat(trade.price).toLocaleString() }}
                         </td>
                         <td class="px-4 py-2 text-right text-gray-300">
-                            {{ trade.amount }}
+                            {{ trade.quantity }}
                         </td>
                         <td class="px-4 py-2 text-right text-gray-500">
                             {{ formatTime(trade.time) }}

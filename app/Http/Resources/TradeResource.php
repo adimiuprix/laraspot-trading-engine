@@ -17,7 +17,7 @@ class TradeResource extends JsonResource
         return [
             'id' => $this->id,
             'price' => $this->price,
-            'amount' => $this->amount,
+            'quantity' => $this->quantity,
             'total' => $this->total_value,
             'commission' => $this->commission,
             'side' => $this->buyerOrder->user_id === auth()->id() ? 'buy' : 'sell',

@@ -145,15 +145,15 @@ foreach ($orders as $order) {
     if (!isset($levels[$rounded])) {
         $levels[$rounded] = [
             'price' => $rounded,
-            'amount' => '0',
+            'quantity' => '0',
             'orders' => []
         ];
     }
     
-    // Step 3: Aggregate amounts using bcadd
-    $levels[$rounded]['amount'] = bcadd(
-        $levels[$rounded]['amount'],
-        $order->remaining_amount,
+    // Step 3: Aggregate quantities using bcadd
+    $levels[$rounded]['quantity'] = bcadd(
+        $levels[$rounded]['quantity'],
+        $order->remaining_quantity,
         $precision
     );
     
@@ -163,7 +163,7 @@ foreach ($orders as $order) {
 
 // Step 5: Calculate totals using bcmul
 foreach ($levels as &$level) {
-    $level['total'] = bcmul($level['price'], $level['amount'], $precision);
+    $level['total'] = bcmul($level['price'], $level['quantity'], $precision);
 }
 
 // Step 6: Sort levels (bids descending, asks ascending)
@@ -182,7 +182,7 @@ private function roundToTickSize(string $price, string $tickSize, int $precision
 
 **Key Characteristics**:
 - Processes bids and asks independently
-- Excludes orders with remaining_amount == 0
+- Excludes orders with remaining_quantity == 0
 - Maintains order time priority within each level for matching purposes
 - Single iteration over order collection
 - All arithmetic uses bcmath for precision
@@ -207,7 +207,7 @@ public function formatOrderBook(
 ```php
 [
     'bids' => [
-        ["50100.50", "1.5", "75150.75"],  // [price, amount, total]
+        ["50100.50", "1.5", "75150.75"],  // [price, quantity, total]
         ["50100.00", "2.3", "115230.00"],
         ...
     ],
@@ -227,7 +227,7 @@ private function formatLevel(array $level, int $precision): array
 {
     return [
         $this->formatNumber($level['price'], $precision),
-        $this->formatNumber($level['amount'], $precision),
+        $this->formatNumber($level['quantity'], $precision),
         $this->formatNumber($level['total'], $precision),
     ];
 }
@@ -244,7 +244,7 @@ private function formatNumber(string $value, int $precision): string
 - All numeric values converted to strings
 - Trailing zeros removed (e.g., "10.50" becomes "10.5")
 - Never uses scientific notation
-- Maintains field order: [price, amount, total]
+- Maintains field order: [price, quantity, total]
 - Preserves sort order from aggregator
 
 
@@ -262,12 +262,12 @@ public function getOpenAsks(string $symbol, ?int $limit = null): Collection
 ```php
 return Order::where('symbol', $symbol)
     ->whereIn('status', ['open', 'partially_filled'])
-    ->where('remaining_amount', '>', 0)
+    ->where('remaining_quantity', '>', 0)
     ->where('side', 'buy')
     ->orderByDesc('price')
     ->orderBy('created_at')
     ->when($limit, fn($query) => $query->limit($limit * 2))  // Pre-aggregation buffer
-    ->get(['id', 'price', 'remaining_amount', 'created_at']);
+    ->get(['id', 'price', 'remaining_quantity', 'created_at']);
 ```
 
 **Query Structure** (Asks):
@@ -275,7 +275,7 @@ return Order::where('symbol', $symbol)
 
 **Performance Optimizations**:
 - Indexes on: (symbol, status, side), (price), (created_at)
-- Selective column retrieval (id, price, remaining_amount, created_at)
+- Selective column retrieval (id, price, remaining_quantity, created_at)
 - Pre-aggregation limit multiplied by 2 to account for potential aggregation
 - Database transaction wrapper for consistency
 
@@ -341,11 +341,11 @@ protected $casts = [
    - Call OrderRepository::getOpenAsks('BTCUSDT', 50)
    
 4. Database Query
-   SELECT id, price, remaining_amount, created_at
+   SELECT id, price, remaining_quantity, created_at
    FROM orders
    WHERE symbol = 'BTCUSDT'
      AND status IN ('open', 'partially_filled')
-     AND remaining_amount > 0
+     AND remaining_quantity > 0
      AND side = 'buy'
    ORDER BY price DESC, created_at ASC
    LIMIT 100
@@ -353,7 +353,7 @@ protected $casts = [
 5. PriceLevelAggregator::aggregateBids($orders, '0.01', 2)
    - Round prices to tick boundaries
    - Group by rounded price
-   - Sum amounts with bcadd
+   - Sum quantitys with bcadd
    - Calculate totals with bcmul
    - Sort descending
    
@@ -361,7 +361,7 @@ protected $casts = [
    - Take first 50 aggregated levels
    
 7. ResponseFormatter::formatOrderBook()
-   - Convert to [[price, amount, total], ...] format
+   - Convert to [[price, quantity, total], ...] format
    - Format numbers as strings with precision
    - Trim trailing zeros
    
@@ -416,8 +416,8 @@ protected $casts = [
 'symbol' => string
 'side' => enum('buy', 'sell')
 'price' => decimal(20,8)
-'amount' => decimal(20,8)
-'remaining_amount' => decimal(20,8)
+'quantity' => decimal(20,8)
+'remaining_quantity' => decimal(20,8)
 'status' => enum('open', 'partially_filled', 'filled', 'cancelled')
 'created_at' => timestamp
 ```
@@ -480,7 +480,7 @@ bcadd('0.1', '0.2', 8) === '0.30000000'  // true
 1. **Database-side aggregation** (SQL GROUP BY):
    ```sql
    SELECT FLOOR(price / 0.01) * 0.01 AS rounded_price,
-          SUM(remaining_amount) AS total_amount
+          SUM(remaining_quantity) AS total_quantity
    FROM orders
    GROUP BY rounded_price
    ```
@@ -567,7 +567,7 @@ Raw Orders (500 bids) → Depth Limit (20 orders) → Aggregation (10 levels)
 **1. Database Indexes**:
 ```sql
 -- Composite index for primary query
-CREATE INDEX idx_orders_orderbook ON orders(symbol, status, side, remaining_amount, price);
+CREATE INDEX idx_orders_orderbook ON orders(symbol, status, side, remaining_quantity, price);
 
 -- Supporting indexes
 CREATE INDEX idx_orders_created ON orders(created_at);
@@ -575,7 +575,7 @@ CREATE INDEX idx_orders_created ON orders(created_at);
 
 **2. Selective Column Retrieval**:
 ```php
-->get(['id', 'price', 'remaining_amount', 'created_at'])  // Not SELECT *
+->get(['id', 'price', 'remaining_quantity', 'created_at'])  // Not SELECT *
 ```
 
 **3. In-Memory Aggregation**:

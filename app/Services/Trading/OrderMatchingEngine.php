@@ -34,17 +34,17 @@ class OrderMatchingEngine
                 break;
             }
 
-            // Calculate fill amount (minimum of both remaining amounts)
-            $fillAmount = $this->calculateFillAmount($order, $matchOrder);
+            // Calculate fill quantity (minimum of both remaining quantitys)
+            $fillquantity = $this->calculateFillquantity($order, $matchOrder);
 
             // Execute partial trade
             if ($order->isBuyOrder()) {
-                $this->tradeExecutionService->executeTrade($order, $matchOrder, $fillAmount);
+                $this->tradeExecutionService->executeTrade($order, $matchOrder, $fillquantity);
             } else {
-                $this->tradeExecutionService->executeTrade($matchOrder, $order, $fillAmount);
+                $this->tradeExecutionService->executeTrade($matchOrder, $order, $fillquantity);
             }
 
-            // Refresh order to get latest filled_amount
+            // Refresh order to get latest filled_quantity
             $order->refresh();
         }
 
@@ -54,11 +54,11 @@ class OrderMatchingEngine
     /**
      * Calculate how much can be filled between two orders.
      */
-    private function calculateFillAmount(Order $order1, Order $order2): string
+    private function calculateFillquantity(Order $order1, Order $order2): string
     {
-        // Take minimum of both remaining amounts
-        $remaining1 = $order1->remaining_amount;
-        $remaining2 = $order2->remaining_amount;
+        // Take minimum of both remaining quantitys
+        $remaining1 = $order1->remaining_quantity;
+        $remaining2 = $order2->remaining_quantity;
 
         return bccomp($remaining1, $remaining2, 8) <= 0
             ? $remaining1
@@ -72,19 +72,19 @@ class OrderMatchingEngine
         PlaceMarketOrderDTO $marketOrder,
         Collection $availableOrders
     ): MarketOrderResultDTO {
-        $remainingAmount = $marketOrder->amount;
+        $remainingquantity = $marketOrder->quantity;
         $totalCost = '0';
         $trades = collect();
 
         foreach ($availableOrders as $limitOrder) {
-            if (bccomp($remainingAmount, '0', 8) <= 0) {
+            if (bccomp($remainingquantity, '0', 8) <= 0) {
                 break; // Market order fully filled
             }
 
-            // Calculate fill amount for this trade
-            $fillAmount = bccomp($remainingAmount, $limitOrder->remaining_amount, 8) <= 0
-                ? $remainingAmount
-                : $limitOrder->remaining_amount;
+            // Calculate fill quantity for this trade
+            $fillquantity = bccomp($remainingquantity, $limitOrder->remaining_quantity, 8) <= 0
+                ? $remainingquantity
+                : $limitOrder->remaining_quantity;
 
             $tradePrice = $limitOrder->price;
 
@@ -97,13 +97,13 @@ class OrderMatchingEngine
                 'buyer_id' => $marketOrder->isBuyOrder() ? $marketOrder->user->id : $limitOrder->user_id,
                 'seller_id' => $marketOrder->isSellOrder() ? $marketOrder->user->id : $limitOrder->user_id,
                 'price' => $tradePrice,
-                'amount' => $fillAmount,
+                'quantity' => $fillquantity,
                 'commission' => '0', // Fee calculated separately
             ]);
 
             // Handle balance transfer
             [$base, $quote] = $this->parseSymbol($marketOrder->symbol);
-            $tradeCost = bcmul($tradePrice, $fillAmount, 8);
+            $tradeCost = bcmul($tradePrice, $fillquantity, 8);
 
             $assetService = app(\App\Services\AssetService::class);
 
@@ -112,8 +112,8 @@ class OrderMatchingEngine
                 // Limit seller: releases BTC, gets USDT
                 
                 // Release locked from limit order seller
-                $assetService->releaseLocked($limitOrder->user, $base, $fillAmount);
-                $assetService->addAmount($limitOrder->user, $quote, $tradeCost);
+                $assetService->releaseLocked($limitOrder->user, $base, $fillquantity);
+                $assetService->addquantity($limitOrder->user, $quote, $tradeCost);
 
                 // Broadcast balance updates for limit order user
                 event(new \App\Events\BalanceUpdated($assetService->getOrCreateAsset($limitOrder->user, $base)));
@@ -123,7 +123,7 @@ class OrderMatchingEngine
                 // Limit buyer: releases USDT, gets BTC
                 
                 $assetService->releaseLocked($limitOrder->user, $quote, $tradeCost);
-                $assetService->addAmount($limitOrder->user, $base, $fillAmount);
+                $assetService->addquantity($limitOrder->user, $base, $fillquantity);
 
                 // Broadcast balance updates for limit order user
                 event(new \App\Events\BalanceUpdated($assetService->getOrCreateAsset($limitOrder->user, $quote)));
@@ -131,11 +131,11 @@ class OrderMatchingEngine
             }
 
             $trades->push($trade);
-            $remainingAmount = bcsub($remainingAmount, $fillAmount, 8);
+            $remainingquantity = bcsub($remainingquantity, $fillquantity, 8);
             $totalCost = bcadd($totalCost, $tradeCost, 8);
 
             // Update limit order
-            $limitOrder->addFill($fillAmount);
+            $limitOrder->addFill($fillquantity);
             $limitOrder->save();
 
             // Broadcast limit order status change
@@ -146,14 +146,14 @@ class OrderMatchingEngine
         }
 
         // Calculate weighted average price
-        $filledAmount = bcsub($marketOrder->amount, $remainingAmount, 8);
-        $averagePrice = bccomp($filledAmount, '0', 8) > 0
-            ? bcdiv($totalCost, $filledAmount, 8)
+        $filledquantity = bcsub($marketOrder->quantity, $remainingquantity, 8);
+        $averagePrice = bccomp($filledquantity, '0', 8) > 0
+            ? bcdiv($totalCost, $filledquantity, 8)
             : '0';
 
         return new MarketOrderResultDTO(
             averagePrice: $averagePrice,
-            filledAmount: $filledAmount,
+            filledquantity: $filledquantity,
             totalCost: $totalCost,
             trades: $trades,
             tradesCount: $trades->count()

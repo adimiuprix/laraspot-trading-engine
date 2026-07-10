@@ -48,10 +48,10 @@ class BalanceUpdated implements ShouldBroadcast
         return [
             'asset' => [
                 'symbol' => $this->asset->symbol,
-                'amount' => $this->asset->amount,
-                'locked_amount' => $this->asset->locked_amount,
-                'available' => $this->asset->amount,
-                'total' => bcadd($this->asset->amount, $this->asset->locked_amount, 8),
+                'quantity' => $this->asset->quantity,
+                'locked_quantity' => $this->asset->locked_quantity,
+                'available' => $this->asset->quantity,
+                'total' => bcadd($this->asset->quantity, $this->asset->locked_quantity, 8),
             ],
         ];
     }

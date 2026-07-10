@@ -55,7 +55,7 @@ open   = price
 high   = price
 low    = price
 close  = price
-volume = amount
+volume = quantity
 ```
 
 #### Subsequent Trades (Update Candle):
@@ -64,7 +64,7 @@ open   = unchanged  // NEVER changes
 high   = max(high, price)
 low    = min(low, price)
 close  = price  // Always latest
-volume = volume + amount
+volume = volume + quantity
 ```
 
 ### 3. Supported Intervals

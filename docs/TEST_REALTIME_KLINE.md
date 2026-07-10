@@ -82,11 +82,11 @@ if (!$buyer) {
     $assetService = app(\App\Services\AssetService::class);
     
     $buyerUsdt = $assetService->getOrCreateAsset($buyer, 'USDT');
-    $buyerUsdt->amount = '100000.00000000';
+    $buyerUsdt->quantity = '100000.00000000';
     $buyerUsdt->save();
     
     $sellerBtc = $assetService->getOrCreateAsset($seller, 'BTC');
-    $sellerBtc->amount = '10.00000000';
+    $sellerBtc->quantity = '10.00000000';
     $sellerBtc->save();
     
     echo "✓ Users created with balances\n";
@@ -101,7 +101,7 @@ $sellOrder = $orderService->placeOrder(new \App\DTOs\PlaceLimitOrderDTO(
     symbol: 'BTC/USDT',
     side: 'sell',
     price: '50000.00000000',
-    amount: '0.01000000'
+    quantity: '0.01000000'
 ));
 
 echo "✓ Sell order placed: #{$sellOrder->id}\n";
@@ -112,7 +112,7 @@ $buyOrder = $orderService->placeOrder(new \App\DTOs\PlaceLimitOrderDTO(
     symbol: 'BTC/USDT',
     side: 'buy',
     price: '50000.00000000',
-    amount: '0.01000000'
+    quantity: '0.01000000'
 ));
 
 echo "✓ Buy order placed: #{$buyOrder->id}\n";
@@ -180,7 +180,7 @@ for ($i = 1; $i <= 3; $i++) {
         symbol: 'BTC/USDT',
         side: 'sell',
         price: $price,
-        amount: '0.01000000'
+        quantity: '0.01000000'
     ));
     
     $buyOrder = $orderService->placeOrder(new \App\DTOs\PlaceLimitOrderDTO(
@@ -188,7 +188,7 @@ for ($i = 1; $i <= 3; $i++) {
         symbol: 'BTC/USDT',
         side: 'buy',
         price: $price,
-        amount: '0.01000000'
+        quantity: '0.01000000'
     ));
     
     echo "✓ Trade #{$i} at {$price}\n";

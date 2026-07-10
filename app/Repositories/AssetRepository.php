@@ -22,7 +22,7 @@ class AssetRepository
     {
         return $user->assets()->firstOrCreate(
             ['symbol' => $symbol],
-            ['amount' => '0', 'locked_amount' => '0']
+            ['quantity' => '0', 'locked_quantity' => '0']
         );
     }
 
@@ -35,34 +35,34 @@ class AssetRepository
     }
 
     /**
-     * Lock amount for trading.
+     * Lock quantity for trading.
      */
-    public function lockAmount(Asset $asset, string $amount): void
+    public function lockquantity(Asset $asset, string $quantity): void
     {
-        $asset->lockAmount($amount);
+        $asset->lockquantity($quantity);
     }
 
     /**
-     * Unlock amount (e.g., when order is cancelled).
+     * Unlock quantity (e.g., when order is cancelled).
      */
-    public function unlockAmount(Asset $asset, string $amount): void
+    public function unlockquantity(Asset $asset, string $quantity): void
     {
-        $asset->unlockAmount($amount);
+        $asset->unlockquantity($quantity);
     }
 
     /**
-     * Release locked amount after trade execution.
+     * Release locked quantity after trade execution.
      */
-    public function releaseLocked(Asset $asset, string $amount): void
+    public function releaseLocked(Asset $asset, string $quantity): void
     {
-        $asset->releaseLocked($amount);
+        $asset->releaseLocked($quantity);
     }
 
     /**
-     * Add amount to balance.
+     * Add quantity to balance.
      */
-    public function addAmount(Asset $asset, string $amount): void
+    public function addquantity(Asset $asset, string $quantity): void
     {
-        $asset->addAmount($amount);
+        $asset->addquantity($quantity);
     }
 }

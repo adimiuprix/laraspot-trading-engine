@@ -36,12 +36,12 @@ class KlineTestSeeder extends Seeder
 
             // Give buyer USDT balance
             $buyerUsdt = $assetService->getOrCreateAsset($buyer, 'USDT');
-            $buyerUsdt->amount = '100000.00000000';
+            $buyerUsdt->quantity = '100000.00000000';
             $buyerUsdt->save();
 
             // Give seller BTC balance
             $sellerBtc = $assetService->getOrCreateAsset($seller, 'BTC');
-            $sellerBtc->amount = '10.00000000';
+            $sellerBtc->quantity = '10.00000000';
             $sellerBtc->save();
 
             $this->command->info('Created test users with balances');
@@ -57,7 +57,7 @@ class KlineTestSeeder extends Seeder
                 symbol: 'BTC/USDT',
                 side: 'sell',
                 price: '50000.00000000',
-                amount: '0.10000000'
+                quantity: '0.10000000'
             ));
             $this->command->info("Placed sell order #{$sellOrder1->id}");
 
@@ -70,7 +70,7 @@ class KlineTestSeeder extends Seeder
                 symbol: 'BTC/USDT',
                 side: 'sell',
                 price: '50100.00000000',
-                amount: '0.15000000'
+                quantity: '0.15000000'
             ));
             $this->command->info("Placed sell order #{$sellOrder2->id}");
 
@@ -82,7 +82,7 @@ class KlineTestSeeder extends Seeder
                 symbol: 'BTC/USDT',
                 side: 'sell',
                 price: '49900.00000000',
-                amount: '0.20000000'
+                quantity: '0.20000000'
             ));
             $this->command->info("Placed sell order #{$sellOrder3->id}");
 
@@ -96,7 +96,7 @@ class KlineTestSeeder extends Seeder
                 symbol: 'BTC/USDT',
                 side: 'buy',
                 price: '50000.00000000',
-                amount: '0.20000000'
+                quantity: '0.20000000'
             ));
             $this->command->info("Placed buy order #{$buyOrder1->id} - should match");
 
@@ -108,7 +108,7 @@ class KlineTestSeeder extends Seeder
                 symbol: 'BTC/USDT',
                 side: 'buy',
                 price: '50050.00000000',
-                amount: '0.10000000'
+                quantity: '0.10000000'
             ));
             $this->command->info("Placed buy order #{$buyOrder2->id} - should match");
 
@@ -120,7 +120,7 @@ class KlineTestSeeder extends Seeder
                 symbol: 'BTC/USDT',
                 side: 'buy',
                 price: '50150.00000000',
-                amount: '0.15000000'
+                quantity: '0.15000000'
             ));
             $this->command->info("Placed buy order #{$buyOrder3->id} - should match");
 

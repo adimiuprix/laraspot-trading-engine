@@ -3,7 +3,7 @@ import { ref, onUnmounted } from 'vue';
 
 interface Trade {
     price: string;
-    amount: string;
+    quantity: string;
     total: string;
     side: 'buy' | 'sell';
     time: string;

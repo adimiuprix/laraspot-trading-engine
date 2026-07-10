@@ -13,7 +13,7 @@ SQLSTATE[HY000]: General error: 1364 Field 'quote_amount' doesn't have a default
 
 In `TradeExecutionService.php`, line 50:
 ```php
-'quote_amount' => $tradePrice * $fillAmount,  // ❌ WRONG
+'quote_amount' => $tradePrice * $fillquantity,  // ❌ WRONG
 ```
 
 **Issue:** Using PHP's `*` operator on decimal strings can cause precision issues and in some cases PHP doesn't cast it properly for database insertion.
@@ -28,10 +28,10 @@ In `TradeExecutionService.php`, line 50:
 
 ```php
 // BEFORE ❌
-'quote_amount' => $tradePrice * $fillAmount,
+'quote_amount' => $tradePrice * $fillquantity,
 
 // AFTER ✅
-'quote_amount' => bcmul($tradePrice, $fillAmount, 8),
+'quote_amount' => bcmul($tradePrice, $fillquantity, 8),
 ```
 
 **Why bcmul?**
@@ -49,7 +49,7 @@ protected function casts(): array
 {
     return [
         'price' => 'decimal:8',
-        'amount' => 'decimal:8',
+        'quantity' => 'decimal:8',
         'commission' => 'decimal:8',
     ];
 }
@@ -59,7 +59,7 @@ protected function casts(): array
 {
     return [
         'price' => 'decimal:8',
-        'amount' => 'decimal:8',
+        'quantity' => 'decimal:8',
         'quote_amount' => 'decimal:8',  // Added
         'commission' => 'decimal:8',
     ];
@@ -103,13 +103,13 @@ Try placing an order now:
 
 **Check database:**
 ```sql
-SELECT id, price, amount, quote_amount, created_at 
+SELECT id, price, quantity, quote_amount, created_at 
 FROM trades 
 ORDER BY id DESC 
 LIMIT 5;
 ```
 
-Should see `quote_amount` = `price * amount`
+Should see `quote_amount` = `price * quantity`
 
 ---
 
@@ -119,12 +119,12 @@ Should see `quote_amount` = `price * amount`
 
 ```php
 // ❌ NEVER do this with money:
-$total = $price * $amount;
+$total = $price * $quantity;
 $result = $value1 + $value2;
 $remaining = $balance - $used;
 
 // ✅ ALWAYS use BC Math:
-$total = bcmul($price, $amount, 8);
+$total = bcmul($price, $quantity, 8);
 $result = bcadd($value1, $value2, 8);
 $remaining = bcsub($balance, $used, 8);
 ```
@@ -168,7 +168,7 @@ The migration was correct. The issue was in the application code not calculating
     'seller_id', 
     'trade_time', 
     'price', 
-    'amount', 
+    'quantity', 
     'quote_amount',  // ✅ Already in fillable
     'commission', 
     'maker_side'

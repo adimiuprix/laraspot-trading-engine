@@ -19,8 +19,8 @@ return new class extends Migration
             $table->foreignId('seller_id')->constrained('users');
             $table->unsignedBigInteger('trade_time');
             $table->decimal('price', 20, 8);
-            $table->decimal('amount', 20, 8);
-            $table->decimal('quote_amount', 20, 8);    // price * amount
+            $table->decimal('quantity', 20, 8);
+            $table->decimal('quote_amount', 20, 8);    // price * quantity
             $table->decimal('commission', 20, 8);
             $table->enum('maker_side', ['buy', 'sell']);
             $table->timestamps();

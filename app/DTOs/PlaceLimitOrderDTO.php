@@ -12,7 +12,7 @@ class PlaceLimitOrderDTO
         public readonly string $symbol,
         public readonly string $side,
         public readonly string $price,
-        public readonly string $amount,
+        public readonly string $quantity,
     ) {}
 
     /**
@@ -25,7 +25,7 @@ class PlaceLimitOrderDTO
             symbol: $request->validated('symbol'),
             side: $request->validated('side'),
             price: $request->validated('price'),
-            amount: $request->validated('amount'),
+            quantity: $request->validated('quantity'),
         );
     }
 
@@ -59,11 +59,11 @@ class PlaceLimitOrderDTO
     }
 
     /**
-     * Get the total value for buy orders (price * amount).
+     * Get the total value for buy orders (price * quantity).
      */
     public function getTotalValue(): string
     {
-        return bcmul($this->price, $this->amount, 8);
+        return bcmul($this->price, $this->quantity, 8);
     }
 
     /**
@@ -96,12 +96,12 @@ class PlaceLimitOrderDTO
     }
 
     /**
-     * Get the amount to lock.
+     * Get the quantity to lock.
      */
-    public function getAmountToLock(): string
+    public function getquantityToLock(): string
     {
-        // Buy: lock (price * amount) in quote currency
-        // Sell: lock amount in base currency
-        return $this->isBuyOrder() ? $this->getTotalValue() : $this->amount;
+        // Buy: lock (price * quantity) in quote currency
+        // Sell: lock quantity in base currency
+        return $this->isBuyOrder() ? $this->getTotalValue() : $this->quantity;
     }
 }

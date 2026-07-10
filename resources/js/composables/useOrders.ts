@@ -7,9 +7,9 @@ interface Order {
     side: 'buy' | 'sell';
     type?: 'limit' | 'market';
     price: string;
-    amount: string;
-    filled_amount?: string;
-    remaining_amount?: string;
+    quantity: string;
+    filled_quantity?: string;
+    remaining_quantity?: string;
     total: string;
     status: 'open' | 'partially_filled' | 'filled' | 'cancelled';
     created_at: string;
@@ -20,7 +20,7 @@ interface PlaceOrderData {
     side: 'buy' | 'sell';
     type?: 'limit' | 'market';
     price: string;
-    amount: string;
+    quantity: string;
 }
 
 export function useOrders(userId: number) {

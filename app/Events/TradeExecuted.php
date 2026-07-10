@@ -53,7 +53,7 @@ class TradeExecuted implements ShouldBroadcast
         return [
             'trade' => [
                 'price' => $this->trade->price,
-                'amount' => $this->trade->amount,
+                'quantity' => $this->trade->quantity,
                 'total' => $this->trade->total_value,
                 'side' => $this->trade->maker_side, // From the perspective of the taker
                 'trade_time' => $this->trade->created_at->toIso8601String(),

@@ -123,12 +123,12 @@ $assetService = app(\App\Services\AssetService::class);
 
 // Give buyer USDT
 $buyerUsdt = $assetService->getOrCreateAsset($buyer, 'USDT');
-$buyerUsdt->amount = '100000.00000000';
+$buyerUsdt->quantity = '100000.00000000';
 $buyerUsdt->save();
 
 // Give seller BTC
 $sellerBtc = $assetService->getOrCreateAsset($seller, 'BTC');
-$sellerBtc->amount = '10.00000000';
+$sellerBtc->quantity = '10.00000000';
 $sellerBtc->save();
 
 echo "✓ Users created\n";
@@ -148,7 +148,7 @@ $sellOrder = $orderService->placeOrder(new PlaceLimitOrderDTO(
     symbol: 'BTC/USDT',
     side: 'sell',
     price: '50000.00000000',
-    amount: '0.10000000'
+    quantity: '0.10000000'
 ));
 
 echo "✓ Sell order placed: #{$sellOrder->id}\n";
@@ -159,7 +159,7 @@ $buyOrder = $orderService->placeOrder(new PlaceLimitOrderDTO(
     symbol: 'BTC/USDT',
     side: 'buy',
     price: '50000.00000000',
-    amount: '0.10000000'
+    quantity: '0.10000000'
 ));
 
 echo "✓ Buy order placed: #{$buyOrder->id}\n";
@@ -172,7 +172,7 @@ echo "✓ Should have matched and created a trade\n";
 $trade = \App\Models\Trade::latest()->first();
 echo "Trade ID: {$trade->id}\n";
 echo "Price: {$trade->price}\n";
-echo "Amount: {$trade->amount}\n";
+echo "quantity: {$trade->quantity}\n";
 echo "Created at: {$trade->created_at}\n";
 ```
 
@@ -226,7 +226,7 @@ for ($i = 1; $i <= 3; $i++) {
         symbol: 'BTC/USDT',
         side: 'sell',
         price: (50000 + ($i * 100)) . '.00000000',
-        amount: '0.05000000'
+        quantity: '0.05000000'
     ));
     echo "Sell order #{$sellOrder->id} placed @ " . $sellOrder->price . "\n";
 }
@@ -237,7 +237,7 @@ $buyOrder = $orderService->placeOrder(new PlaceLimitOrderDTO(
     symbol: 'BTC/USDT',
     side: 'buy',
     price: '51000.00000000',
-    amount: '0.15000000'
+    quantity: '0.15000000'
 ));
 
 echo "Buy order #{$buyOrder->id} placed\n";
@@ -261,7 +261,7 @@ if ($kline) {
     echo "High: {$kline->high} (highest price)\n";
     echo "Low: {$kline->low} (lowest price)\n";
     echo "Close: {$kline->close} (last trade price)\n";
-    echo "Volume: {$kline->volume} (sum of all amounts)\n";
+    echo "Volume: {$kline->volume} (sum of all quantitys)\n";
     echo "Trades count: {$kline->trades_count} (should be 3)\n";
 }
 ```
@@ -335,11 +335,11 @@ $orderService = app(\App\Services\Trading\OrderService::class);
 // Ensure they have balance
 $assetService = app(\App\Services\AssetService::class);
 $buyerUsdt = $assetService->getOrCreateAsset($buyer, 'USDT');
-$buyerUsdt->amount = '100000.00000000';
+$buyerUsdt->quantity = '100000.00000000';
 $buyerUsdt->save();
 
 $sellerBtc = $assetService->getOrCreateAsset($seller, 'BTC');
-$sellerBtc->amount = '10.00000000';
+$sellerBtc->quantity = '10.00000000';
 $sellerBtc->save();
 
 // Place matching orders
@@ -348,7 +348,7 @@ $sellOrder = $orderService->placeOrder(new PlaceLimitOrderDTO(
     symbol: 'BTC/USDT',
     side: 'sell',
     price: '55000.00000000',
-    amount: '0.05000000'
+    quantity: '0.05000000'
 ));
 
 $buyOrder = $orderService->placeOrder(new PlaceLimitOrderDTO(
@@ -356,7 +356,7 @@ $buyOrder = $orderService->placeOrder(new PlaceLimitOrderDTO(
     symbol: 'BTC/USDT',
     side: 'buy',
     price: '55000.00000000',
-    amount: '0.05000000'
+    quantity: '0.05000000'
 ));
 
 echo "✓ Orders placed. Check browser console for WebSocket event!\n";
@@ -458,7 +458,7 @@ After running all scenarios, you should have:
   - High = maximum price
   - Low = minimum price
   - Close = last trade price
-  - Volume = sum of all amounts
+  - Volume = sum of all quantitys
 - ✅ WebSocket broadcasting working
 - ✅ Gap filling working
 - ✅ API endpoint returning correct format

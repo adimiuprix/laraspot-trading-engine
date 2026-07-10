@@ -126,7 +126,7 @@ open   = price
 high   = price
 low    = price
 close  = price
-volume = amount
+volume = quantity
 ```
 
 **Subsequent Trades (Update Candle):**
@@ -135,7 +135,7 @@ open   = UNCHANGED  ← NEVER changes!
 high   = max(current_high, new_price)
 low    = min(current_low, new_price)
 close  = new_price  ← Always latest
-volume = current_volume + new_amount
+volume = current_volume + new_quantity
 ```
 
 ### 3. Complete Flow Diagram
@@ -167,14 +167,14 @@ volume = current_volume + new_amount
         │   ├─ Find kline WHERE symbol=X AND interval='1m' AND open_time=bucket
         │   │
         │   ├─ IF NOT EXISTS:
-        │   │   └─ Create new kline (O=H=L=C=price, V=amount, trades=1)
+        │   │   └─ Create new kline (O=H=L=C=price, V=quantity, trades=1)
         │   │
         │   └─ IF EXISTS:
         │       └─ Update kline:
         │           high = max(high, price)
         │           low = min(low, price)
         │           close = price
-        │           volume += amount
+        │           volume += quantity
         │           trades_count++
         │
         └─ (Future: Loop for 5m, 1h, 1d intervals)

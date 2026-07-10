@@ -40,7 +40,7 @@ php artisan tinker
 // Should return 6 (3 buy orders + 3 sell orders)
 
 // Check actual data
-\App\Models\Order::where('symbol', 'BTC/USDT')->where('status', 'open')->get(['side', 'price', 'amount']);
+\App\Models\Order::where('symbol', 'BTC/USDT')->where('status', 'open')->get(['side', 'price', 'quantity']);
 ```
 
 **If count is 0:** Run seeder
@@ -62,8 +62,8 @@ fetch('/api/orderbook/BTC%2FUSDT')
 
 // Should return:
 // {
-//   bids: [{price: "42000.00000000", amount: "0.50000000", total: "21000.00000000"}, ...],
-//   asks: [{price: "42100.00000000", amount: "0.50000000", total: "21050.00000000"}, ...],
+//   bids: [{price: "42000.00000000", quantity: "0.50000000", total: "21000.00000000"}, ...],
+//   asks: [{price: "42100.00000000", quantity: "0.50000000", total: "21050.00000000"}, ...],
 //   last_price: "0",
 //   spread: "100.00000000"
 // }
@@ -143,7 +143,7 @@ fetch('/api/assets')
 2. Open browser console (F12)
 3. Fill order form:
    - Price: `42000`
-   - Amount: `0.1`
+   - quantity: `0.1`
 4. Click "Buy BTC"
 5. Watch console for:
    ```
@@ -206,7 +206,7 @@ $user->assets;
 
 ### Issue: Orders not matching
 
-**Reason:** Our matching engine only matches **exact amounts**
+**Reason:** Our matching engine only matches **exact quantitys**
 
 **Example:**
 - Buy order: 0.5 BTC @ 42100
@@ -215,7 +215,7 @@ $user->assets;
 
 - Buy order: 0.5 BTC @ 42100
 - Sell order: 1.0 BTC @ 42100
-- ❌ Won't match (different amounts)
+- ❌ Won't match (different quantitys)
 
 ---
 

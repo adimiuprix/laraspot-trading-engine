@@ -22,7 +22,7 @@ class KlineService
      * Algorithm from OHLCV_Real_Time_Guide.md:
      * 1. Calculate bucket time: floor(timestamp / interval) * interval
      * 2. Find existing kline by bucket
-     * 3. If not exists: Create new kline (open=high=low=close=price, volume=amount)
+     * 3. If not exists: Create new kline (open=high=low=close=price, volume=quantity)
      * 4. If exists: Update high/low/close/volume
      */
     public function updateOrCreateFromTrade(
@@ -30,7 +30,7 @@ class KlineService
         string $interval,
         int $timestamp,
         string $price,
-        string $amount
+        string $quantity
     ): Kline {
         // Get interval in seconds
         $intervalSeconds = $this->getIntervalSeconds($interval);
@@ -39,8 +39,8 @@ class KlineService
         $openTime = $this->calculateBucketTime($timestamp, $intervalSeconds);
         $closeTime = $openTime + $intervalSeconds - 1;
 
-        // Calculate quote volume (price × amount)
-        $quoteAmount = bcmul($price, $amount, 8);
+        // Calculate quote volume (price × quantity)
+        $quotequantity = bcmul($price, $quantity, 8);
 
         // Try to find existing kline
         $kline = $this->klineRepository->findByBucket($symbol, $interval, $openTime);
@@ -56,8 +56,8 @@ class KlineService
                 'high' => $price,        // Initialize with first price
                 'low' => $price,         // Initialize with first price
                 'close' => $price,       // Latest trade price
-                'volume' => $amount,     // Base asset volume
-                'quote_volume' => $quoteAmount, // Quote asset volume
+                'volume' => $quantity,     // Base asset volume
+                'quote_volume' => $quotequantity, // Quote asset volume
                 'trades_count' => 1,
                 'is_closed' => false,
             ]);
@@ -70,7 +70,7 @@ class KlineService
             ]);
         } else {
             // Update existing kline
-            $kline->updateWithTrade($price, $amount, $quoteAmount);
+            $kline->updateWithTrade($price, $quantity, $quotequantity);
 
             Log::debug("Updated kline", [
                 'symbol' => $symbol,
@@ -94,7 +94,7 @@ class KlineService
     {
         $symbol = $trade->buyerOrder->symbol;
         $price = $trade->price;
-        $amount = $trade->amount;
+        $quantity = $trade->quantity;
         $timestamp = $trade->created_at->timestamp;
 
         $intervals = config('trading.kline_intervals', []);
@@ -106,7 +106,7 @@ class KlineService
                     interval: $intervalName,
                     timestamp: $timestamp,
                     price: $price,
-                    amount: $amount
+                    quantity: $quantity
                 );
             } catch (\Exception $e) {
                 Log::error("Failed to update kline for interval {$intervalName}", [
