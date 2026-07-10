@@ -13,15 +13,15 @@ return new class extends Migration
     {
         Schema::create('trades', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('buyer_order_id')->constrained('orders');
-            $table->foreignId('seller_order_id')->constrained('orders');
-            $table->foreignId('buyer_id')->constrained('users');
-            $table->foreignId('seller_id')->constrained('users');
-            $table->unsignedBigInteger('trade_time');
-            $table->decimal('price', 20, 8);
-            $table->decimal('quantity', 20, 8);
-            $table->decimal('quote_amount', 20, 8);    // price * quantity
-            $table->decimal('commission', 20, 8);
+            $table->foreignId('buyer_order_id')->constrained('orders')->cascadeOnDelete();
+            $table->foreignId('seller_order_id')->constrained('orders')->cascadeOnDelete();
+            $table->foreignId('buyer_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('seller_id')->constrained('users')->cascadeOnDelete();
+            $table->unsignedBigInteger('trade_time')->default(0)->nullable();
+            $table->decimal('price', 20, 8)->default(0);
+            $table->decimal('quantity', 20, 8)->default(0);
+            $table->decimal('quote_amount', 20, 8)->default(0);    // price * quantity
+            $table->decimal('commission', 20, 8)->default(0);
             $table->enum('maker_side', ['buy', 'sell']);
             $table->timestamps();
         });
