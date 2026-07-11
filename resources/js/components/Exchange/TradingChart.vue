@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { createChart, CandlestickSeries, HistogramSeries } from 'lightweight-charts';
+import {
+    createChart,
+    CandlestickSeries,
+    HistogramSeries,
+} from 'lightweight-charts';
 import type { IChartApi } from 'lightweight-charts';
 import { useKlines, type Kline } from '@/composables/useKlines';
 
@@ -21,6 +25,10 @@ const chartContainer = ref<HTMLDivElement | null>(null);
 let chart: IChartApi | null = null;
 let candlestickSeries: any = null;
 let volumeSeries: any = null;
+
+// Live candle indicator
+const liveCandle = ref<Kline | null>(null);
+const isLiveCandleActive = ref(false);
 
 // Composable for klines data
 const { klines, loading, error, fetchKlines, subscribeToUpdates } = useKlines(
@@ -125,13 +133,26 @@ function loadChartData() {
 
 /**
  * Update chart with new kline data (real-time)
+ *
+ * The lightweight-charts library automatically handles:
+ * - If time exists: updates the existing candle (live candle)
+ * - If time is new: creates a new candle
+ *
+ * This is perfect for live candle updates!
  */
-function updateChart(kline: Kline) {
+function updateChart(kline: Kline, isClosed: boolean) {
     if (!candlestickSeries || !volumeSeries) return;
 
-    console.log('📊 Updating chart with kline:', kline.time);
+    // Update live candle indicator
+    if (!isClosed) {
+        liveCandle.value = kline;
+        isLiveCandleActive.value = true;
+    } else {
+        isLiveCandleActive.value = false;
+        liveCandle.value = null;
+    }
 
-    // Update candlestick
+    // Update candlestick (will update existing candle if time matches, or create new one)
     candlestickSeries.update({
         time: kline.time,
         open: kline.open,
@@ -187,9 +208,14 @@ onMounted(async () => {
     // Load initial data to chart
     loadChartData();
 
-    // Subscribe to real-time updates
-    subscribeToUpdates((kline) => {
-        updateChart(kline);
+    // Subscribe to real-time updates with live candle support
+    subscribeToUpdates((kline, isClosed) => {
+        updateChart(kline, isClosed);
+
+        // Log candle status for debugging
+        if (isClosed) {
+            console.log('✅ Candle closed, next trade will create new candle');
+        }
     });
 });
 
@@ -262,10 +288,30 @@ onUnmounted(() => {
 
         <!-- Chart Info Overlay -->
         <div
-            class="absolute left-8 top-8 rounded bg-gray-800/80 px-3 py-2 text-sm backdrop-blur-sm"
+            class="absolute top-8 left-8 rounded bg-gray-800/80 px-3 py-2 text-sm backdrop-blur-sm"
         >
             <div class="font-semibold text-white">{{ symbol }}</div>
             <div class="text-gray-400">{{ interval.toUpperCase() }}</div>
+        </div>
+
+        <!-- Live Candle Indicator -->
+        <div
+            v-if="isLiveCandleActive && liveCandle"
+            class="absolute top-8 right-8 rounded border border-blue-500/50 bg-blue-500/20 px-3 py-2 text-sm backdrop-blur-sm"
+        >
+            <div class="flex items-center gap-2">
+                <div
+                    class="h-2 w-2 animate-pulse rounded-full bg-blue-500"
+                ></div>
+                <span class="font-semibold text-blue-400">LIVE</span>
+            </div>
+            <div class="mt-1 text-xs text-gray-300">
+                O: {{ liveCandle.open.toFixed(2) }} H:
+                {{ liveCandle.high.toFixed(2) }}
+                <br />
+                L: {{ liveCandle.low.toFixed(2) }} C:
+                {{ liveCandle.close.toFixed(2) }}
+            </div>
         </div>
     </div>
 </template>

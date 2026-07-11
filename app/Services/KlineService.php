@@ -24,6 +24,7 @@ class KlineService
      * 2. Find existing kline by bucket
      * 3. If not exists: Create new kline (open=high=low=close=price, volume=quantity)
      * 4. If exists: Update high/low/close/volume
+     * 5. Check if kline should be closed (current time >= close_time)
      */
     public function updateOrCreateFromTrade(
         string $symbol,
@@ -45,6 +46,8 @@ class KlineService
         // Try to find existing kline
         $kline = $this->klineRepository->findByBucket($symbol, $interval, $openTime);
 
+        $isNewKline = false;
+
         if (! $kline) {
             // Create new kline (first trade in this interval)
             $kline = $this->klineRepository->create([
@@ -59,20 +62,40 @@ class KlineService
                 'volume' => $quantity,     // Base asset volume
                 'quote_volume' => $quotequantity, // Quote asset volume
                 'trades_count' => 1,
-                'is_closed' => false,
+                'is_closed' => false,    // New kline is always open
             ]);
 
-            Log::info("Created new kline", [
+            $isNewKline = true;
+
+            Log::info("✨ Created new kline", [
                 'symbol' => $symbol,
                 'interval' => $interval,
                 'open_time' => $openTime,
                 'price' => $price,
             ]);
         } else {
-            // Update existing kline
+            // Check if kline should be auto-closed (trade arrived after close_time)
+            // This happens when no trades occurred at the end of interval
+            if (! $kline->is_closed && $timestamp > $kline->close_time) {
+                $kline->markAsClosed();
+                
+                Log::info("🔒 Auto-closed previous kline (trade arrived late)", [
+                    'symbol' => $symbol,
+                    'interval' => $interval,
+                    'open_time' => $kline->open_time,
+                ]);
+
+                // Broadcast the closed kline before creating new one
+                event(new KlineUpdated($kline));
+
+                // Now create a new kline for this trade
+                return $this->updateOrCreateFromTrade($symbol, $interval, $timestamp, $price, $quantity);
+            }
+
+            // Update existing kline (live candle update)
             $kline->updateWithTrade($price, $quantity, $quotequantity);
 
-            Log::debug("Updated kline", [
+            Log::debug("📊 Updated live kline", [
                 'symbol' => $symbol,
                 'interval' => $interval,
                 'open_time' => $openTime,
@@ -81,7 +104,8 @@ class KlineService
             ]);
         }
 
-        // Broadcast kline update via WebSocket (optional for real-time charts)
+        // Broadcast kline update via WebSocket
+        // Frontend will detect if this is live update or new candle based on is_closed flag
         event(new KlineUpdated($kline));
 
         return $kline;
@@ -146,25 +170,36 @@ class KlineService
     }
 
     /**
-     * Close klines that have passed their close_time.
-     * This should be run periodically (e.g., via scheduled command).
+     * Close klines that have passed their close_time and broadcast updates.
+     * This ensures clients get notified when candles are finalized.
+     * 
+     * This should be run periodically (e.g., via scheduled command every minute).
      */
     public function closeExpiredKlines(): int
     {
         $now = now()->timestamp;
         $unclosedKlines = $this->klineRepository->getUnclosedKlinesBefore($now);
 
+        $closedCount = 0;
+
         foreach ($unclosedKlines as $kline) {
             $this->klineRepository->markAsClosed($kline);
 
-            Log::info("Closed kline", [
+            // Broadcast the closed kline so clients know it's finalized
+            event(new KlineUpdated($kline));
+
+            Log::info("🔒 Closed kline and broadcasted", [
                 'symbol' => $kline->symbol,
                 'interval' => $kline->interval,
                 'open_time' => $kline->open_time,
+                'close_time' => $kline->close_time,
+                'now' => $now,
             ]);
+
+            $closedCount++;
         }
 
-        return $unclosedKlines->count();
+        return $closedCount;
     }
 
     /**

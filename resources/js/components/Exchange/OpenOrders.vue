@@ -132,7 +132,7 @@ function getStatusLabel(status?: string): string {
                     :key="order.id"
                     class="rounded-lg border border-gray-700 bg-gray-900 p-3 transition-all"
                     :class="{
-                        'opacity-50 pointer-events-none':
+                        'pointer-events-none opacity-50':
                             cancellingOrderId === order.id,
                     }"
                 >
@@ -214,7 +214,11 @@ function getStatusLabel(status?: string): string {
                             class="mb-1 flex justify-between text-xs text-gray-400"
                         >
                             <span>Filled: {{ order.filled_quantity }}</span>
-                            <span>{{ getFillPercentage(order).toFixed(1) }}%</span>
+                            <span
+                                >{{
+                                    getFillPercentage(order).toFixed(1)
+                                }}%</span
+                            >
                         </div>
                         <div class="h-1.5 w-full rounded-full bg-gray-700">
                             <div

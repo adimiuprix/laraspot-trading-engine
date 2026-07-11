@@ -64,12 +64,16 @@ defineProps<{
                                     {{ parseFloat(ask.price).toLocaleString() }}
                                 </div>
                             </td>
-                            <td class="relative px-3 py-1 text-right text-gray-300">
+                            <td
+                                class="relative px-3 py-1 text-right text-gray-300"
+                            >
                                 <div class="relative z-10">
                                     {{ ask.quantity }}
                                 </div>
                             </td>
-                            <td class="relative px-3 py-1 text-right text-gray-500">
+                            <td
+                                class="relative px-3 py-1 text-right text-gray-500"
+                            >
                                 <div class="relative z-10">
                                     {{ parseFloat(ask.total).toFixed(2) }}
                                 </div>
@@ -78,7 +82,8 @@ defineProps<{
                                     class="absolute inset-y-0 right-0 bg-red-900/10"
                                     :style="{
                                         width:
-                                            (parseFloat(ask.quantity) / 2.5) * 100 +
+                                            (parseFloat(ask.quantity) / 2.5) *
+                                                100 +
                                             '%',
                                     }"
                                 ></div>
@@ -118,12 +123,16 @@ defineProps<{
                                     {{ parseFloat(bid.price).toLocaleString() }}
                                 </div>
                             </td>
-                            <td class="relative px-3 py-1 text-right text-gray-300">
+                            <td
+                                class="relative px-3 py-1 text-right text-gray-300"
+                            >
                                 <div class="relative z-10">
                                     {{ bid.quantity }}
                                 </div>
                             </td>
-                            <td class="relative px-3 py-1 text-right text-gray-500">
+                            <td
+                                class="relative px-3 py-1 text-right text-gray-500"
+                            >
                                 <div class="relative z-10">
                                     {{ parseFloat(bid.total).toFixed(2) }}
                                 </div>
@@ -132,7 +141,8 @@ defineProps<{
                                     class="absolute inset-y-0 right-0 bg-green-900/10"
                                     :style="{
                                         width:
-                                            (parseFloat(bid.quantity) / 2.5) * 100 +
+                                            (parseFloat(bid.quantity) / 2.5) *
+                                                100 +
                                             '%',
                                     }"
                                 ></div>

@@ -19,18 +19,22 @@ class CloseExpiredKlines extends Command
      *
      * @var string
      */
-    protected $description = 'Close klines that have passed their close_time';
+    protected $description = 'Close klines that have passed their close_time and broadcast updates';
 
     /**
      * Execute the console command.
      */
     public function handle(KlineService $klineService): int
     {
-        $this->info('Closing expired klines...');
+        $this->info('🔍 Checking for expired klines...');
 
         $closedCount = $klineService->closeExpiredKlines();
 
-        $this->info("Closed {$closedCount} expired klines.");
+        if ($closedCount > 0) {
+            $this->info("✅ Closed and broadcasted {$closedCount} kline(s)");
+        } else {
+            $this->info('✨ No expired klines found');
+        }
 
         return self::SUCCESS;
     }

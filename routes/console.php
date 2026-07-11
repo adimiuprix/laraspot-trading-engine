@@ -8,6 +8,10 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Schedule kline closure every minute
-Schedule::command('klines:close-expired')->everyMinute();
+// Schedule kline closure every minute to auto-close and broadcast finished candles
+Schedule::command('klines:close-expired')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->runInBackground();
+
 
