@@ -123,7 +123,7 @@ class KlineService
 
         $intervals = config('trading.kline_intervals', []);
 
-        foreach ($intervals as $intervalName => $intervalSeconds) {
+        foreach ($intervals as $intervalName) {
             try {
                 $this->updateOrCreateFromTrade(
                     symbol: $symbol,
