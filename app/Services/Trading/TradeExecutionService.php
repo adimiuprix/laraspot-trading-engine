@@ -11,6 +11,7 @@ use App\Repositories\TradeRepository;
 use App\Services\AssetService;
 use App\Services\Trading\Concerns\ParsesSymbol;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class TradeExecutionService
 {
@@ -32,6 +33,8 @@ class TradeExecutionService
             ? $buyOrder->price
             : $sellOrder->price;
 
+        $makerSide = $buyOrder->created_at < $sellOrder->created_at ? 'buy' : 'sell';
+
         // Calculate commission for this partial fill
         $commission = $this->feeCalculator->calculate($tradePrice, $fillquantity);
 
@@ -46,7 +49,7 @@ class TradeExecutionService
             'quantity' => $fillquantity, // Partial quantity
             'quote_amount' => bcmul($tradePrice, $fillquantity, 8), // Use bcmul for precision
             'commission' => $commission,
-            'maker_side' => $buyOrder->created_at < $sellOrder->created_at ? 'buy' : 'sell', // Determine who market maker
+            'maker_side' => $makerSide, // Determine who market maker
         ]);
 
         // Update balances for this partial fill
