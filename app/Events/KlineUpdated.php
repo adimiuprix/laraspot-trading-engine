@@ -27,10 +27,10 @@ class KlineUpdated implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        $symbol = str_replace('/', '-', $this->kline->symbol);
+        $channelSymbol = str_replace('/', '-', $this->kline->symbol);
 
         return [
-            new Channel("kline.{$symbol}.{$this->kline->interval}"),
+            new Channel("kline.{$channelSymbol}"),
         ];
     }
 
