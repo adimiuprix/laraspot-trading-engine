@@ -4,8 +4,14 @@ namespace App\Services\Trading;
 
 use App\DTOs\MarketOrderResultDTO;
 use App\DTOs\PlaceMarketOrderDTO;
+use App\Events\BalanceUpdated;
+use App\Events\OrderStatusChanged;
+use App\Events\TradeExecuted;
 use App\Models\Order;
 use App\Repositories\OrderRepository;
+use App\Repositories\TradeRepository;
+use App\Services\AssetService;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class OrderMatchingEngine
@@ -21,7 +27,7 @@ class OrderMatchingEngine
     public function matchOrder(Order $order): void
     {
         // Loop until order is fully filled or no more matchable orders
-        while (!$order->isFullyFilled()) {
+        while (! $order->isFullyFilled()) {
             // Get the best matchable order (best price, earliest time)
             $matchOrder = $this->orderRepository->getBestMatchableOrder(
                 $order->symbol,
@@ -91,43 +97,50 @@ class OrderMatchingEngine
             // Create trade record
             // For market orders, we use the limit order ID for both sides
             // and track the actual users via buyer_id/seller_id fields
-            $trade = app(\App\Repositories\TradeRepository::class)->create([
+
+            // Determine maker side: limit order is always maker, market order is taker
+            $makerSide = $limitOrder->side; // 'buy' or 'sell'
+
+            $trade = app(TradeRepository::class)->create([
                 'buyer_order_id' => $marketOrder->isBuyOrder() ? $limitOrder->id : $limitOrder->id,
                 'seller_order_id' => $marketOrder->isSellOrder() ? $limitOrder->id : $limitOrder->id,
                 'buyer_id' => $marketOrder->isBuyOrder() ? $marketOrder->user->id : $limitOrder->user_id,
                 'seller_id' => $marketOrder->isSellOrder() ? $marketOrder->user->id : $limitOrder->user_id,
+                'trade_time' => Carbon::now()->timestamp,
                 'price' => $tradePrice,
                 'quantity' => $fillquantity,
+                'quote_amount' => bcmul($tradePrice, $fillquantity, 8),
                 'commission' => '0', // Fee calculated separately
+                'maker_side' => $makerSide,
             ]);
 
             // Handle balance transfer
             [$base, $quote] = $this->parseSymbol($marketOrder->symbol);
             $tradeCost = bcmul($tradePrice, $fillquantity, 8);
 
-            $assetService = app(\App\Services\AssetService::class);
+            $assetService = app(AssetService::class);
 
             if ($marketOrder->isBuyOrder()) {
                 // Market buy: Market user pays USDT, gets BTC
                 // Limit seller: releases BTC, gets USDT
-                
+
                 // Release locked from limit order seller
                 $assetService->releaseLocked($limitOrder->user, $base, $fillquantity);
                 $assetService->addquantity($limitOrder->user, $quote, $tradeCost);
 
                 // Broadcast balance updates for limit order user
-                event(new \App\Events\BalanceUpdated($assetService->getOrCreateAsset($limitOrder->user, $base)));
-                event(new \App\Events\BalanceUpdated($assetService->getOrCreateAsset($limitOrder->user, $quote)));
+                event(new BalanceUpdated($assetService->getOrCreateAsset($limitOrder->user, $base)));
+                event(new BalanceUpdated($assetService->getOrCreateAsset($limitOrder->user, $quote)));
             } else {
                 // Market sell: Market user gives BTC, gets USDT
                 // Limit buyer: releases USDT, gets BTC
-                
+
                 $assetService->releaseLocked($limitOrder->user, $quote, $tradeCost);
                 $assetService->addquantity($limitOrder->user, $base, $fillquantity);
 
                 // Broadcast balance updates for limit order user
-                event(new \App\Events\BalanceUpdated($assetService->getOrCreateAsset($limitOrder->user, $quote)));
-                event(new \App\Events\BalanceUpdated($assetService->getOrCreateAsset($limitOrder->user, $base)));
+                event(new BalanceUpdated($assetService->getOrCreateAsset($limitOrder->user, $quote)));
+                event(new BalanceUpdated($assetService->getOrCreateAsset($limitOrder->user, $base)));
             }
 
             $trades->push($trade);
@@ -139,10 +152,10 @@ class OrderMatchingEngine
             $limitOrder->save();
 
             // Broadcast limit order status change
-            event(new \App\Events\OrderStatusChanged($limitOrder));
+            event(new OrderStatusChanged($limitOrder));
 
             // Broadcast trade executed
-            event(new \App\Events\TradeExecuted($trade));
+            event(new TradeExecuted($trade));
         }
 
         // Calculate weighted average price
@@ -174,6 +187,7 @@ class OrderMatchingEngine
         foreach ($quotePatterns as $quote) {
             if (str_ends_with($symbol, $quote)) {
                 $base = substr($symbol, 0, -strlen($quote));
+
                 return [$base, $quote];
             }
         }
