@@ -18,9 +18,7 @@ class KlineUpdated implements ShouldBroadcast
      * Create a new event instance.
      */
     public function __construct(public Kline $kline)
-    {
-        Log::info($kline);
-    }
+    {}
 
     /**
      * Get the channels the event should broadcast on.

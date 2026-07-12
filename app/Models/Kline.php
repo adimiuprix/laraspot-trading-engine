@@ -65,7 +65,7 @@ class Kline extends Model
     public function toApiFormat(): array
     {
         return [
-            (string) $this->open_time,      // Convert to string
+            (string) $this->open_time,       // Convert to string
             $this->open,                     // Already string from decimal cast
             $this->high,                     // Already string from decimal cast
             $this->low,                      // Already string from decimal cast

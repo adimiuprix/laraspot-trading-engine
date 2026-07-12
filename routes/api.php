@@ -37,5 +37,5 @@ Route::get('/orderbook/{symbol}', [OrderBookController::class, 'show'])->where('
 Route::get('/trades/{symbol}', [TradeController::class, 'index'])->where('symbol', '.*');
 
 // Klines (Candlestick data)
-Route::get('/klines', [KlineController::class, 'index']);
-Route::get('/klines/latest', [KlineController::class, 'latest']);
+Route::get('/klines/{symbol}', [KlineController::class, 'index'])->where('symbol', '.*');
+Route::get('/klines/{symbol}/latest', [KlineController::class, 'latest'])->where('symbol', '.*');
