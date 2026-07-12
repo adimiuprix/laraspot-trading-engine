@@ -63,21 +63,23 @@ return [
     | Supported intervals for OHLCV (candlestick) data generation.
     | Key = interval name, Value = seconds
     |
-    | Note: Currently only 1-minute interval is enabled.
-    | Other intervals can be added later: 3m, 5m, 15m, 30m, 1h, 4h, 1d, etc.
+    | Available intervals:
+    | - 1m (1 minute) = 60 seconds
+    | - 3m (3 minutes) = 180 seconds
+    | - 5m (5 minutes) = 300 seconds
+    | - 15m (15 minutes) = 900 seconds
+    | - 30m (30 minutes) = 1800 seconds
+    | - 1h (1 hour) = 3600 seconds
+    | - 4h (4 hours) = 14400 seconds
+    | - 1d (1 day) = 86400 seconds
     |
     */
 
     'kline_intervals' => [
-        '1m' => 60,  // 1 minute only
-        
-        // Future intervals (uncomment when ready):
-        // '3m' => 180,
-        // '5m' => 300,
-        // '15m' => 900,
-        // '30m' => 1800,
-        // '1h' => 3600,
-        // '4h' => 14400,
-        // '1d' => 86400,
+        '1m' => 60,
+        '5m' => 300,
+        '15m' => 900,
+        '1h' => 3600,
+        '1d' => 86400,
     ],
 ];

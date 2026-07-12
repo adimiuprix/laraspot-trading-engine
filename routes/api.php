@@ -35,4 +35,7 @@ Route::middleware('auth:web')->group(function () {
 // Public endpoints (no auth required)
 Route::get('/orderbook/{symbol}', [OrderBookController::class, 'show'])->where('symbol', '.*');
 Route::get('/trades/{symbol}', [TradeController::class, 'index'])->where('symbol', '.*');
-Route::get('/klines/{symbol}', [KlineController::class, 'index'])->where('symbol', '.*');
+
+// Klines (Candlestick data)
+Route::get('/klines', [KlineController::class, 'index']);
+Route::get('/klines/latest', [KlineController::class, 'latest']);

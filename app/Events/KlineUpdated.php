@@ -27,11 +27,10 @@ class KlineUpdated implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        // Replace slash with dash for channel name
-        $channelSymbol = str_replace('/', '-', $this->kline->symbol);
+        $symbol = str_replace('/', '-', $this->kline->symbol);
 
         return [
-            new Channel("kline.{$channelSymbol}.{$this->kline->interval}"),
+            new Channel("kline.{$symbol}.{$this->kline->interval}"),
         ];
     }
 
@@ -49,22 +48,7 @@ class KlineUpdated implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'e' => 'kline',     // Event type
-            's' => $this->kline->symbol,
-            'k' => [
-                't' => $this->kline->open_time * 1000,  // Kline start time (ms)
-                'T' => $this->kline->close_time * 1000, // Kline close time (ms)
-                's' => $this->kline->symbol,
-                'i' => $this->kline->interval,
-                'o' => $this->kline->open,
-                'h' => $this->kline->high,
-                'l' => $this->kline->low,
-                'c' => $this->kline->close,
-                'v' => $this->kline->volume,
-                'q' => $this->kline->quote_volume,
-                'n' => $this->kline->trades_count,
-                'x' => $this->kline->is_closed,  // Is this kline closed?
-            ],
+            'kline' => $this->kline->toApiFormat(),
         ];
     }
 }
