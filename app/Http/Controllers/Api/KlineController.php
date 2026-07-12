@@ -11,50 +11,19 @@ class KlineController extends Controller
 {
     /**
      * Get klines (candlestick data) for a symbol.
-     *
-     * @param  string  $symbol
-     * @return JsonResponse
      */
     public function index(Request $request, string $symbol): JsonResponse
     {
         $interval = $request->query('interval', '1m');
-        $limit = $request->query('limit', 100);
 
+        // Get all klines in chronological order (oldest to newest)
         $klines = Kline::query()
             ->where('symbol', $symbol)
             ->where('interval', $interval)
-            ->orderBy('open_time', 'desc')
-            ->limit($limit)
+            ->orderBy('open_time', 'asc') // Chronological order: oldest to newest
             ->get()
-            ->reverse()
-            ->values()
             ->map(fn (Kline $kline) => $kline->toApiFormat());
 
         return response()->json($klines);
-    }
-
-    /**
-     * Get latest kline for a symbol.
-     *
-     * @param  string  $symbol
-     * @return JsonResponse
-     */
-    public function latest(Request $request, string $symbol): JsonResponse
-    {
-        $interval = $request->query('interval', '1m');
-
-        $kline = Kline::query()
-            ->where('symbol', $symbol)
-            ->where('interval', $interval)
-            ->orderBy('open_time', 'desc')
-            ->first();
-
-        if (! $kline) {
-            return response()->json([
-                'message' => 'No kline data found',
-            ], 404);
-        }
-
-        return response()->json($kline->toApiFormat());
     }
 }
