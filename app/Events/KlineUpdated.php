@@ -8,7 +8,6 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
 class KlineUpdated implements ShouldBroadcast
 {
@@ -17,8 +16,7 @@ class KlineUpdated implements ShouldBroadcast
     /**
      * Create a new event instance.
      */
-    public function __construct(public Kline $kline)
-    {}
+    public function __construct(public Kline $kline) {}
 
     /**
      * Get the channels the event should broadcast on.
@@ -30,7 +28,7 @@ class KlineUpdated implements ShouldBroadcast
         $channelSymbol = str_replace('/', '-', $this->kline->symbol);
 
         return [
-            new Channel("kline.{$channelSymbol}"),
+            new Channel("kline.{$channelSymbol}.{$this->kline->interval}"),
         ];
     }
 

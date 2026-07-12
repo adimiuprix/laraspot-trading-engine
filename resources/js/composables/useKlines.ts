@@ -10,36 +10,23 @@ export interface Kline {
     volume: number;
 }
 
-interface KlineUpdateEvent {
-    e: string; // Event type
-    s: string; // Symbol
-    k: {
-        t: number; // Open time (milliseconds)
-        T: number; // Close time (milliseconds)
-        s: string; // Symbol
-        i: string; // Interval
-        o: string; // Open
-        h: string; // High
-        l: string; // Low
-        c: string; // Close
-        v: string; // Volume
-        q: string; // Quote volume
-        n: number; // Trades count
-        x: boolean; // Is closed?
-    };
-}
-
 export function useKlines(symbol: string, interval: string = '1m') {
     const klines = ref<Kline[]>([]);
     const loading = ref(true); // True on initial load
     const error = ref<string | null>(null);
 
+    // Debounce timer for refresh
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const DEBOUNCE_DELAY = 300; // 300ms debounce
+
     /**
      * Fetch historical klines from API
      */
-    async function fetchKlines(limit: number = 500): Promise<void> {
+    async function fetchKlines(limit: number = 500, isInitial = false): Promise<void> {
         try {
-            loading.value = true;
+            if (isInitial) {
+                loading.value = true;
+            }
             error.value = null;
 
             // Symbol format: BTCUSDT (no slash needed)
@@ -65,23 +52,41 @@ export function useKlines(symbol: string, interval: string = '1m') {
                 volume: parseFloat(k[5]), // Parse volume string to number
             }));
 
-            console.log(
-                `📊 Loaded ${klines.value.length} klines for ${symbol}`,
-            );
+            if (isInitial) {
+                console.log(
+                    `📊 Loaded ${klines.value.length} klines for ${symbol}`,
+                );
+            }
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Unknown error';
             console.error('Error fetching klines:', err);
         } finally {
-            loading.value = false;
+            if (isInitial) {
+                loading.value = false;
+            }
         }
+    }
+
+    /**
+     * Debounced refresh function to prevent multiple rapid fetches
+     */
+    function debouncedRefresh() {
+        // Clear existing timer
+        if (refreshTimer) {
+            clearTimeout(refreshTimer);
+        }
+
+        // Set new timer
+        refreshTimer = setTimeout(() => {
+            fetchKlines(500, false); // Not initial load
+            refreshTimer = null;
+        }, DEBOUNCE_DELAY);
     }
 
     /**
      * Subscribe to real-time kline updates via WebSocket
      */
-    function subscribeToUpdates(
-        onUpdate?: (kline: Kline, isClosed: boolean) => void,
-    ): void {
+    function subscribeToUpdates(onUpdate?: () => void): void {
         try {
             const echoInstance = echo();
 
@@ -99,49 +104,12 @@ export function useKlines(symbol: string, interval: string = '1m') {
 
             echoInstance
                 .channel(channelName)
-                .listen('.kline.updated', (event: KlineUpdateEvent) => {
-                    const isClosed = event.k.x; // Check if kline is closed
+                .listen('.kline.updated', () => {
+                    // Use debounced refresh to prevent multiple rapid fetches
+                    debouncedRefresh();
 
-                    console.log(`🔥 Kline ${isClosed ? 'CLOSED' : 'UPDATE'}:`, {
-                        time: Math.floor(event.k.t / 1000),
-                        close: event.k.c,
-                        isClosed,
-                    });
-
-                    const updatedKline: Kline = {
-                        time: Math.floor(event.k.t / 1000), // Convert ms to seconds
-                        open: parseFloat(event.k.o),
-                        high: parseFloat(event.k.h),
-                        low: parseFloat(event.k.l),
-                        close: parseFloat(event.k.c),
-                        volume: parseFloat(event.k.v),
-                    };
-
-                    // Update the klines array for live candle
-                    if (klines.value.length > 0) {
-                        const lastKline = klines.value[klines.value.length - 1];
-
-                        if (lastKline.time === updatedKline.time) {
-                            // Update existing live candle
-                            klines.value[klines.value.length - 1] =
-                                updatedKline;
-                        } else {
-                            // New candle - previous candle was closed, add new one
-                            klines.value.push(updatedKline);
-
-                            // Keep only last 500 candles in memory
-                            if (klines.value.length > 500) {
-                                klines.value.shift();
-                            }
-                        }
-                    } else {
-                        // First candle received via WebSocket
-                        klines.value.push(updatedKline);
-                    }
-
-                    // Call callback with kline data and closed status
                     if (onUpdate) {
-                        onUpdate(updatedKline, isClosed);
+                        onUpdate();
                     }
                 });
         } catch (error) {
@@ -153,6 +121,12 @@ export function useKlines(symbol: string, interval: string = '1m') {
      * Unsubscribe from kline updates
      */
     function unsubscribe(): void {
+        // Clear any pending refresh timer
+        if (refreshTimer) {
+            clearTimeout(refreshTimer);
+            refreshTimer = null;
+        }
+
         try {
             const echoInstance = echo();
 

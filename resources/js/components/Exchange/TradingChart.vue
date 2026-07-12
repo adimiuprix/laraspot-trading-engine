@@ -127,47 +127,21 @@ function loadChartData() {
     // Set data to series
     candlestickSeries.setData(candleData);
     volumeSeries.setData(volumeData);
-
-    console.log(`📈 Loaded ${candleData.length} candles to chart`);
 }
 
-/**
- * Update chart with new kline data (real-time)
- *
- * The lightweight-charts library automatically handles:
- * - If time exists: updates the existing candle (live candle)
- * - If time is new: creates a new candle
- *
- * This is perfect for live candle updates!
- */
-function updateChart(kline: Kline, isClosed: boolean) {
-    if (!candlestickSeries || !volumeSeries) return;
+// Watch for klines changes to redraw chart and update live candle indicator
+watch(
+    klines,
+    () => {
+        loadChartData();
 
-    // Update live candle indicator
-    if (!isClosed) {
-        liveCandle.value = kline;
-        isLiveCandleActive.value = true;
-    } else {
-        isLiveCandleActive.value = false;
-        liveCandle.value = null;
-    }
-
-    // Update candlestick (will update existing candle if time matches, or create new one)
-    candlestickSeries.update({
-        time: kline.time,
-        open: kline.open,
-        high: kline.high,
-        low: kline.low,
-        close: kline.close,
-    });
-
-    // Update volume
-    volumeSeries.update({
-        time: kline.time,
-        value: kline.volume,
-        color: kline.close >= kline.open ? '#10b98166' : '#ef444466',
-    });
-}
+        if (klines.value.length > 0) {
+            liveCandle.value = klines.value[klines.value.length - 1];
+            isLiveCandleActive.value = true;
+        }
+    },
+    { deep: true },
+);
 
 /**
  * Handle window resize
@@ -203,20 +177,18 @@ onMounted(async () => {
     initChart();
 
     // Fetch historical data
-    await fetchKlines(500);
+    await fetchKlines(500, true);
 
     // Load initial data to chart
     loadChartData();
 
-    // Subscribe to real-time updates with live candle support
-    subscribeToUpdates((kline, isClosed) => {
-        updateChart(kline, isClosed);
+    if (klines.value.length > 0) {
+        liveCandle.value = klines.value[klines.value.length - 1];
+        isLiveCandleActive.value = true;
+    }
 
-        // Log candle status for debugging
-        if (isClosed) {
-            console.log('✅ Candle closed, next trade will create new candle');
-        }
-    });
+    // Subscribe to real-time updates
+    subscribeToUpdates();
 });
 
 onUnmounted(() => {
