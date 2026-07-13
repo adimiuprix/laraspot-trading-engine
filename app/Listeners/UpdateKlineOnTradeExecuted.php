@@ -5,6 +5,7 @@ namespace App\Listeners;
 use App\Events\KlineUpdated;
 use App\Events\TradeExecuted;
 use App\Models\Kline;
+use Illuminate\Support\Facades\Log;
 
 class UpdateKlineOnTradeExecuted
 {
@@ -21,13 +22,11 @@ class UpdateKlineOnTradeExecuted
      */
     public function handle(TradeExecuted $event): void
     {
-        $kline = $this->activeCandle('BTCUSDT');
-
+        $trade = $event->trade;
+        $kline = $this->activeCandle($trade->buyerOrder->symbol);
         if (! $kline) {
             return; // No active candle, skip update
         }
-
-        $trade = $event->trade;
 
         $tradeTime = $trade->trade_time;
         $quantity = $trade->quantity;
