@@ -11,7 +11,6 @@ use App\Repositories\TradeRepository;
 use App\Services\AssetService;
 use App\Services\Trading\Concerns\ParsesSymbol;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
 
 class TradeExecutionService
 {
