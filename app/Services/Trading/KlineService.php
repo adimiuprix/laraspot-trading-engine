@@ -34,41 +34,6 @@ class KlineService
     }
 
     /**
-     * Buat kline baru dengan nilai OHLC dari kline terakhir.
-     */
-    public function createNewKline(string $symbol, string $interval): Kline
-    {
-        $lastKline = Kline::where('symbol', $symbol)
-            ->where('interval', $interval)
-            ->orderByDesc('open_time')
-            ->first();
-
-        $this->closeExpired($symbol, $interval);
-
-        $openTime = now()->timestamp;
-        $closeTime = $openTime;
-
-        // Jika ada kline sebelumnya, gunakan harga close-nya
-        // Jika tidak ada, gunakan nilai default '0'
-        $price = $lastKline ? $lastKline->close : '0';
-
-        return Kline::create([
-            'symbol' => $symbol,
-            'interval' => $interval,
-            'open_time' => $openTime,
-            'close_time' => $closeTime,
-            'open' => $price,
-            'high' => $price,
-            'low' => $price,
-            'close' => $price,
-            'volume' => '0',
-            'quote_volume' => '0',
-            'trades_count' => 0,
-            'is_closed' => false,
-        ]);
-    }
-
-    /**
      * Tutup semua kline yang expired dan generate kline berikutnya.
      * Method ini akan:
      * 1. Update is_closed = true untuk kline yang close_time <= now
@@ -111,7 +76,7 @@ class KlineService
         $intervalSeconds = config("trading.kline_intervals.{$interval}", 60);
 
         // Hitung waktu untuk kline baru (menggunakan timestamp, bukan millisecond)
-        $openTime = $lastKline ? $lastKline->close_time + 1 : now()->timestamp;
+        $openTime = $lastKline->close_time + 1;
         $closeTime = $openTime + $intervalSeconds - 1;
 
         // Gunakan harga close dari kline sebelumnya, atau '0' jika tidak ada

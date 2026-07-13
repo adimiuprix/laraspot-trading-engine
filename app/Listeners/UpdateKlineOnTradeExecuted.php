@@ -115,8 +115,6 @@ class UpdateKlineOnTradeExecuted
         return Kline::query()
             ->where('symbol', $symbol)
             ->where('is_closed', false)
-            ->latest('id')
-            ->first()
             ->get();
     }
 }
