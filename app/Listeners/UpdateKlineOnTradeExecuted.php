@@ -6,7 +6,6 @@ use App\Events\KlineUpdated;
 use App\Events\TradeExecuted;
 use App\Models\Kline;
 use App\Models\Trade;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 class UpdateKlineOnTradeExecuted
@@ -19,11 +18,14 @@ class UpdateKlineOnTradeExecuted
         $trade = $event->trade;
         $symbol = $trade->buyerOrder->symbol;
 
-        // Get ALL active candles for this symbol (all intervals)
-        $klines = $this->getActiveCandles($symbol);
+        // Ambil kline yang saat ini sedang aktif (is_closed = false)
+        // Karena project ini hanya menggunakan 1 interval (1m), kita cukup ambil yang pertama
+        $kline = Kline::where('symbol', $symbol)
+            ->where('is_closed', false)
+            ->first();
 
-        if ($klines->isEmpty()) {
-            Log::warning('No active candles found for symbol', [
+        if (! $kline) {
+            Log::warning('No active candles found for symbol to update', [
                 'symbol' => $symbol,
                 'trade_id' => $trade->id,
             ]);
@@ -31,18 +33,11 @@ class UpdateKlineOnTradeExecuted
             return;
         }
 
-        $tradeTime = $trade->trade_time;
+        // Langsung update kline yang sedang aktif
+        $this->updateKline($kline, $trade);
 
-        // Update all active intervals
-        foreach ($klines as $kline) {
-            // Only update if trade is within this candle's timeframe
-            if ($tradeTime <= $kline->close_time) {
-                $this->updateKline($kline, $trade);
-
-                // Broadcast kline update for real-time chart
-                event(new KlineUpdated($kline));
-            }
-        }
+        // Broadcast kline update for real-time chart
+        event(new KlineUpdated($kline));
     }
 
     /**
@@ -103,18 +98,5 @@ class UpdateKlineOnTradeExecuted
     private function getQuoteVolume(string $currentQuoteVolume, string $tradeQuoteAmount): string
     {
         return bcadd($currentQuoteVolume, $tradeQuoteAmount, 8);
-    }
-
-    /**
-     * Get all active (non-closed) candles for the symbol.
-     *
-     * @return Collection<int, Kline>
-     */
-    private function getActiveCandles(string $symbol): Collection
-    {
-        return Kline::query()
-            ->where('symbol', $symbol)
-            ->where('is_closed', false)
-            ->get();
     }
 }

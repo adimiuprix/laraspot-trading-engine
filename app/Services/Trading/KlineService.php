@@ -48,7 +48,7 @@ class KlineService
         $expiredKlines = Kline::where('is_closed', false)
             ->where('close_time', '<=', $now)
             ->get(['symbol', 'interval'])
-            ->unique(fn($kline) => $kline->symbol . '-' . $kline->interval);
+            ->unique(fn ($kline) => $kline->symbol.'-'.$kline->interval);
 
         foreach ($expiredKlines as $kline) {
             // 1. Tutup semua kline yang expired untuk symbol-interval ini
@@ -73,14 +73,14 @@ class KlineService
             ->orderByDesc('close_time')
             ->first();
 
-            
         // Hitung durasi interval dari config
         $intervalSeconds = config("trading.kline_intervals.{$interval}", 60);
-        
-        // Hitung waktu untuk kline baru (menggunakan timestamp, bukan millisecond)
-        $openTime = Carbon::now()->timestamp;
+
+        // Gunakan grid alignment berdasarkan waktu saat ini
+        $now = Carbon::now()->timestamp;
+        $openTime = floor($now / $intervalSeconds) * $intervalSeconds;
         $closeTime = $openTime + $intervalSeconds - 1;
-        
+
         // Gunakan harga close dari kline sebelumnya, atau '0' jika tidak ada
         $price = $lastKline ? $lastKline->close : '0';
 
