@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\KlineController;
 use App\Http\Controllers\Api\OrderBookController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\TradeController;
+use App\Http\Controllers\YussController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -38,3 +39,6 @@ Route::get('/trades/{symbol}', [TradeController::class, 'index'])->where('symbol
 
 // Klines (Candlestick data)
 Route::get('/klines/{symbol}', [KlineController::class, 'index'])->where('symbol', '.*');
+
+// test api
+Route::get('/yus', [YussController::class, 'index']);
