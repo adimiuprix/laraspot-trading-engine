@@ -4,6 +4,7 @@ namespace App\Services\Trading;
 
 use App\Events\KlineUpdated;
 use App\Models\Kline;
+use Carbon\Carbon;
 
 class KlineService
 {
@@ -63,7 +64,7 @@ class KlineService
     /**
      * Generate kline baru untuk periode berikutnya.
      */
-    private function generateNextKline(string $symbol, string $interval): Kline
+    public function generateNextKline(string $symbol, string $interval): Kline
     {
         // Ambil kline terakhir yang sudah ditutup
         $lastKline = Kline::where('symbol', $symbol)
@@ -72,13 +73,14 @@ class KlineService
             ->orderByDesc('close_time')
             ->first();
 
+            
         // Hitung durasi interval dari config
         $intervalSeconds = config("trading.kline_intervals.{$interval}", 60);
-
+        
         // Hitung waktu untuk kline baru (menggunakan timestamp, bukan millisecond)
-        $openTime = $lastKline->close_time + 1;
+        $openTime = Carbon::now()->timestamp;
         $closeTime = $openTime + $intervalSeconds - 1;
-
+        
         // Gunakan harga close dari kline sebelumnya, atau '0' jika tidak ada
         $price = $lastKline ? $lastKline->close : '0';
 

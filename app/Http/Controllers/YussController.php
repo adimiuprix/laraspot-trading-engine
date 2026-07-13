@@ -9,6 +9,6 @@ class YussController extends Controller
 {
     public function index(KlineService $klineService)
     {
-        $klineService->createNewKline('BTCUSDT', '1m');
+        $klineService->generateNextKline('BTCUSDT', '1m');
     }
 }

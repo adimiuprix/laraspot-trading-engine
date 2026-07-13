@@ -18,20 +18,24 @@ if not exist "vendor\" (
     exit /b 1
 )
 
-echo [1/4] Starting Laravel Development Server...
+echo [1/5] Starting Laravel Development Server...
 start "Laravel Server" cmd /k "php artisan serve"
 timeout /t 2 /nobreak >nul
 
-echo [2/4] Starting Vite Dev Server...
+echo [2/5] Starting Vite Dev Server...
 start "Vite Dev Server" cmd /k "npm run dev"
 timeout /t 2 /nobreak >nul
 
-echo [3/4] Starting Queue Worker...
+echo [3/5] Starting Queue Worker...
 start "Queue Worker" cmd /k "php artisan queue:work --tries=3 --timeout=90"
 timeout /t 2 /nobreak >nul
 
-echo [4/4] Starting Reverb WebSocket Server...
+echo [4/5] Starting Reverb WebSocket Server...
 start "Reverb Server" cmd /k "php artisan reverb:start"
+timeout /t 2 /nobreak >nul
+
+echo [5/5] Starting Schedule...
+start "Schedule" cmd /k "php artisan schedule:work"
 timeout /t 2 /nobreak >nul
 
 echo.
@@ -54,6 +58,7 @@ taskkill /FI "WindowTitle eq Laravel Server*" /T /F >nul 2>&1
 taskkill /FI "WindowTitle eq Vite Dev Server*" /T /F >nul 2>&1
 taskkill /FI "WindowTitle eq Queue Worker*" /T /F >nul 2>&1
 taskkill /FI "WindowTitle eq Reverb Server*" /T /F >nul 2>&1
+taskkill /FI "WindowTitle eq Schedule Worker*" /T /F >nul 2>&1
 
 echo All services stopped.
 pause
