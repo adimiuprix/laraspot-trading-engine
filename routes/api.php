@@ -41,4 +41,4 @@ Route::get('/trades/{symbol}', [TradeController::class, 'index'])->where('symbol
 Route::get('/klines/{symbol}', [KlineController::class, 'index'])->where('symbol', '.*');
 
 // test api
-Route::get('/yus', [YussController::class, 'index']);
+Route::post('/login', [YussController::class, 'index']);

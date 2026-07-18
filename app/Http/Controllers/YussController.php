@@ -3,12 +3,28 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Services\Trading\KlineService;
+use Illuminate\Support\Facades\Auth;
 
 class YussController extends Controller
 {
-    public function index(KlineService $klineService)
+    public function index(Request $request)
     {
-        $klineService->generateNextKline('BTCUSDT', '1m');
+        $credentials = $request->validate([
+        'email' => ['required', 'email'],
+        'password' => ['required'],
+        ]);
+
+        if (! Auth::attempt($credentials)) {
+            return response()->json([
+                'message' => 'Invalid credentials'
+            ], 401);
+        }
+
+        $request->session()->regenerate();
+
+        return response()->json([
+            'message' => 'Login success',
+            'user' => Auth::user(),
+        ]);
     }
 }
